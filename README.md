@@ -1,9 +1,106 @@
-# Dive Spec
-Specification for the Dive programming language.
+# Aratar Spec
+Specification for the Aratar programming language.  Aratar is similar to Python,
+but lower level.
 
-# Keywords
-- `DEF`: Define a function()
-- `KEY`: Define a keyword (doesn't use () to call, compile-time code generation)
+```
+# Declare a variable
+var := Int 0
+# Set a variable
+var: 1
+# Cast a variable
+var: Float(0)
+# Get reference
+var: @Int @var
+
+# Declare a global constant
+VAR :: Num 0
+
+# Define a function (parameterized variable)
+function():
+    # Code
+function;
+
+# Define a macro (parameterized variable), resolves to a constant.
+FUNCTION():
+    # Code
+FUNCTION;
+
+# If/Case/Elif/Else statement
+a = b < c:          # if (a = b) & (b < c)
+    # Code
+2:                  # else, if a = 2 (case 2:)
+    # Code
+b=3:                # else, if b = 3
+    # Code
+_:                  # else (case default:)
+    # Code
+;
+
+# Infinite Loop
+'a:
+    # Code
+'a;
+
+# Iterator Loop (prints "1" "2" "3" each on their own line).
+'i: [1 2 3]
+    i
+'i;
+
+# While Loop
+running :: Bool TRUE
+'a running:
+    # Code
+'a;
+```
+
+# Syntax
+```
+:   # Declare immutable (cannot be set again), open scope.
+::  # Declare mutable (can be set again).
+:=  # Set mutable (can be set again).
+;   # Close scope, array repeat.
+.   # Access inside module, struct, array (indices and ranges), decimal point
+..  # Inclusive-Exclusive range, math notation: [)
+... # Inclusive range, math notation: []
+@   # Reference Modifier, Get A Mutable Reference (Immutable can be inferred)
+[]  # Lists (Possibly vectors or matrices), Slice / Element Indices
+{}  # Sets (Lists without duplicates - have additional operators), HashMaps
+()  # Tuples (including function parameters)
+
+## OPERATORS ##
++-/*%   # Add, Subtract (Negation), Divide, Multiply, Modulo (Remainder)
+++      # Concatenate
+//      # Integer (discrete) Divide
+**      # Exponent
+%%      # Dot Product, Matrix Multiplication
+>>      # Shift Right
+<<      # Shift Left
+==      # Is approximately equal (for floats)
+~~      # (Set) Not - Uses First Set as the domain.
+&&      # (Set) And
+||      # (Set) Or
+^^      # (Set) Xor
+=       # Is Equal To
+~=      # Is Not Equal To (Equal, Followed by Not)
+<       # Is Less Than
+>       # Is More Than
+<=      # Is Less Than Or Equal To
+>=      # Is More Than Or Equal To
+~       # (Bitwise) Not
+&       # (Bitwise) And
+~&      # (Bitwise) Nand (And, Followed by Not)
+|       # (Bitwise) Or
+~|      # (Bitwise) Nor (Or, Followed by Not)
+^       # (Bitwise) Xor
+~^      # (Bitwise) Xnor (Xor, Followed by Not)
+?       # Rust-Style Try Operator
+## Double operators with no special meaning ##
+--      # Double negation (Addition, No-Op)
+??      # Double Try Operator
+## A few _ assign operators
++:      # Add assign
+++:     # Append assign
+```
 
 # Token types
 - `0x`: Hexadecimal +
@@ -18,11 +115,6 @@ Specification for the Dive programming language.
 - `#`: Int, or inference
 
 # Types
-```
-[] - Indices, ranges or matrices/vectors
-{} - Lists
-() - Tuples
-```
 
 ## Numeric Types (All are subtypes of `Num`)
 - `Int` - Unconstrained integer can be any real integer.  Represented as big int, or if provable, a ranged int type.
@@ -44,17 +136,17 @@ Specification for the Dive programming language.
 ### Fixed size numeric types
 - `Int8` - Signed 8-bit integer
 - `IntU8` - Unsigned 8-bit integer
-- `Int[0--255]` - integer with range 0 through 255 inclusive.
+- `Int[0...255]` - integer with range 0 through 255 inclusive.
 - `Int[0..256]` - integer with range 0 through 255 inclusive.
 
 ## `List`
 `List`s have unconstrained size, represented as a growable array, or if provable, a fixed-size array type.
 ```
-{1 2 3} # List with 3 integers
+[1 2 3] # List with 3 integers
 ```
 `List`s inherit functions from the type they are a List of.  For example,
 ```
-assert {1 2 3} * {3 2 1} = {3 4 3}
+assert [1 2 3] * [3 2 1] = [3 4 3]
 ```
 
 ## `Text`
@@ -63,17 +155,19 @@ assert {1 2 3} * {3 2 1} = {3 4 3}
 Short for "function".
 
 ```
-DEF add_func(first:Int second:Int) -> Int
+add_func(first: Int; second: Int): Int
     # Return the value
     break add_func: first + second
+:add_func
     
-DEF div_func(
-    first,second:Int
-) -> (Int rem:Int)
+div_func(
+    first, second: Int
+): (Int rem:Int)
     break div_func: (
         first / second
         rem: first % second
     )
+div_func;
 ```
 
 # Literals and printing

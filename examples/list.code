@@ -1,0 +1,36 @@
+## An list is like an array in C.  It can act like a python list if it's
+## resizeable (it is by default, unless you don't resize it).
+
+"Creating a list…"
+array: [Int 0; 10]
+array: [Int 1 2 3 4 5 6 7 8 9 10]
+
+"First element =" array[0] "…"
+
+"Printing first 5 elements…"
+array[0..5]
+array[..5]
+array[...4]
+assert [1 2 3 4 5] = array[0..5]
+assert [1 2 3 4 5] = array[..5]
+assert [1 2 3 4 5] = array[...4]
+
+"Printing last 4 elements…"
+array[6..10]
+array[-4..]
+array[6..]
+assert [7 8 9 10] = array[6..10]
+assert [7 8 9 10] = array[-4..]
+assert [7 8 9 10] = array[6..]
+
+"Printing middle 6 elements"
+array[2...7]
+array[2..8]
+assert [3 4 5 6 7 8] = [2...7]
+assert [3 4 5 6 7 8] = [2..8]
+
+"Adding lists together"
+assert [1 2] + [3 4] = [4 6]
+
+"Concatenating lists together"
+assert [1 2] ++ [3 4] = [1 2 3 4]
