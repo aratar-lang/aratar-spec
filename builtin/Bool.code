@@ -1,0 +1,47 @@
+#!aratar 0.1
+
+# Boolean, A true or false value
+Bool {
+    False: 0
+    True : 1
+} Bool
+
+# Comparison on boolean
+Bool=(self, other Bool) -> Bool {
+    self {
+        other: (True)
+        _    : (False)
+    } self
+} Bool=()
+
+# Negation on boolean.
+Bool.not(self, other Bool) -> Bool {
+    self {
+        False: (True)
+        True : (False)
+    } self
+} Bool.not()
+
+# Logical and
+Bool.and(self, other Bool) -> Bool {
+    self {
+        True: other
+        False : (False)
+    } self
+}
+
+# Logical or (inclusive)
+Bool.or(self, other Bool) -> Bool {
+    self {
+        True: True
+        False : other
+    } self
+}
+
+# Logical xor
+Bool.xor(self, other Bool) -> Bool {
+    self {
+        True: not other
+        False : other
+    } self
+}

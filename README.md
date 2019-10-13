@@ -1,40 +1,190 @@
 # Aratar Spec
 Specification for the Aratar programming language.  Aratar is similar to Python,
-but lower level.
+but lower level (like Rust).
+
+## Style
+- `SHOUTING_SNAKE_CASE`: immutable variable
+- `SHOUTING_SNAKE_CASE()`: enumeration (tagged union) variant
+- `snake_case`: mutable variable
+- `snake_case()`: function
+- `Darwin_Case`: type
+- `Darwin_Case()`: constructor
+
+## C Functions Interoperability
+- `mylib.My_Type() -> My_Type` -> `mylib_MyType mylib_MyType_New()`
+- `mylib.My_Type.my_function()` -> `void mylib_MyType_myFunction()`
+
+## Prelude (Keywords)
+- `def` - Declare data that can never be changed, is either included directly in
+  binary or optimized out.  Or Declare data that once set within scope, cannot
+  be changed.  Often optimized out.
+- `let` - Declare data that can change any number of times.
+- `if` - Conditional scope.
+- `assert` - Fail to compile if false
+
+## 
+Declare mutable or immutable variable (depending on style):
+```aratar
+def VAR: value # constant
+def var: value # immutable
+let var: value # mutable (yes, identifiers can have same name as keywords)
+```
+
+Define function (parameters are always immutable - implicit `let`):
+```aratar
+@function(param Type, param_2 Another_Type):
+    /* Code */
+:function()
+```
+
+Define enum, discriminated union:
+```aratar
+def My_Enum [
+    FIRST_VARIANT
+    SECOND_VARIANT(Int)
+] My_Enum
+def CONSTANT: 0
+```
+
+## If Statements
+```aratar
+def var: 5
+if var [
+    5 {
+        # If var = 5 is true
+    } 5
+    _ {
+        # If var = 5 is false
+    } _
+] var
+if var = 5 {
+    # If var = 5 
+}
+if var [
+    < 5 {
+    }
+    = 5 {
+    }
+    > 5 {
+    }
+]
+if (var > 5 and < 10) or (constant = 2 or 5) [
+    YES {
+    }
+    NO {
+    }
+]
+
+# 
+def my_var: Opt.YES 5
+if my_var [
+    YES a {
+        Text a
+    }
+    NO {
+        "variable my_var is NO"
+    }
+]
+```
+
+## Terminal
+You can use aratar as a terminal shell:
+
+```aratar
+~/ # Implicit cd to container's root folder.
+ls -a, -l # List files (or `ls -al`).
+```
+
+Will print out the files in the root folder of the container.
+
+```aratar
+def ls | args ... {
+    aratar.exec ~/.path/ls, args
+}
+```
+
+## Nested Functions
+```
+assert (max (min 4, 2), 3) = 3
+```
+
+## Built-In Trait Functions
+Functions that return `Opt[Opt]` return `FALSE` if it cannot be determined, `TRUE[FALSE]` if it is not true, and `TRUE[TRUE]` when it is true.
+
+<!--
+- Equivalence `Any.=(other Any) -> Opt[Opt]` for `self = other` (`Any_Eq()`)
+```
+= ~=
+```
+-->
+
+- Not `Any.not() -> Opt` for `~other`, purposely not implemented on numeric types for safety (Use `Int(!Data(my_int))`, if you need to).
+```
+!
+```
+
+- Less Than `Any.order() -> Opt[Opt]` for `self < other` (`Any_Order`)
+```
+< > <= >= = !=
+```
+
+##
 
 ```
 # Declare a variable
-var := Int 0
+let var Int: 0
+let var: 0
+
 # Set a variable
 var: 1
 # Cast a variable
 var: Float(0)
 # Get reference
 var: @Int @var
+# Declare local immutable variable
+VAR Int: var + 2
 
 # Declare a global constant
-VAR :: Num 0
+VAR Num: 0
 
 # Define a function (parameterized variable)
-function():
+function() {
     # Code
-function;
+} function
 
-# Define a macro (parameterized variable), resolves to a constant.
-FUNCTION():
+# Define a macro (parameterized variable), resolves to a constant or algorithm.
+FUNCTION() {
     # Code
-FUNCTION;
+} FUNCTION
 
-# If/Case/Elif/Else statement
-a = b < c:          # if (a = b) & (b < c)
-    # Code
-2:                  # else, if a = 2 (case 2:)
-    # Code
-b=3:                # else, if b = 3
-    # Code
-_:                  # else (case default:)
-    # Code
-;
+# If/Case/Elif/Else statement (possible)
+on(value Any) {} # on is a prefix function on Any.
+Bool.and(other Bool) -> bool
+Bool.or(other Bool)
+Bool.xor(other Bool)
+Bool.not(other Bool)
+
+if a = 0 {
+    # If statement.
+}
+
+if a = b < c or a = 0 {
+    # If statement with logical connector.
+}
+
+if a
+    = b < c {
+        # if (a = b) & (b < c)
+    }
+    = 2 {
+        # else, if a = 2 (case 2:)
+    }
+    = _ and b = 3 {
+        # else, if b = 3
+    }
+    = _ {
+        # else (case default:)
+    }
 
 # Infinite Loop
 'a:
@@ -63,9 +213,9 @@ running :: Bool TRUE
 ..  # Inclusive-Exclusive range, math notation: [)
 ... # Inclusive range, math notation: []
 @   # Reference Modifier, Get A Mutable Reference (Immutable can be inferred)
-[]  # Lists (Possibly vectors or matrices), Slice / Element Indices
-{}  # Sets (Lists without duplicates - have additional operators), HashMaps
-()  # Tuples (including function parameters)
+[]  # Lists (Possibly vectors or matrices), Records, HashMaps
+{}  # Scopes
+()  # Tuples (including function parameters), Slice / Element Indices
 
 ## OPERATORS ##
 +-/*%   # Add, Subtract (Negation), Divide, Multiply, Modulo (Remainder)
@@ -142,32 +292,37 @@ running :: Bool TRUE
 ## `List`
 `List`s have unconstrained size, represented as a growable array, or if provable, a fixed-size array type.
 ```
-[1 2 3] # List with 3 integers
+{1 2 3} # List with 3 integers
 ```
 `List`s inherit functions from the type they are a List of.  For example,
 ```
-assert [1 2 3] * [3 2 1] = [3 4 3]
+? {1 2 3} * {3 2 1} = {3 4 3}
 ```
 
+## `Data`
+
 ## `Text`
+
+## `Bool`
 
 ## `Func`
 Short for "function".
 
 ```
-add_func(first: Int; second: Int): Int
+add_func(first: Int; second: Int): Int {
     # Return the value
     break add_func: first + second
-:add_func
+} add_func
     
 div_func(
     first, second: Int
 ): (Int rem:Int)
+{
     break div_func: (
         first / second
         rem: first % second
     )
-div_func;
+} div_func
 ```
 
 # Literals and printing
