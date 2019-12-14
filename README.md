@@ -3,24 +3,34 @@ Specification for the Aratar programming language.  Aratar is similar to Python,
 but lower level (like Rust).
 
 ## Style
-- `SHOUTING_SNAKE_CASE`: immutable variable
-- `SHOUTING_SNAKE_CASE()`: enumeration (tagged union) variant
 - `snake_case`: mutable variable
 - `snake_case()`: function
-- `Darwin_Case`: type
-- `Darwin_Case()`: constructor
+- `Darwin_Case`: type, constant
+- `Darwin_Case()`: constructor, enum variant with associated data
 
 ## C Functions Interoperability
 - `mylib.My_Type() -> My_Type` -> `mylib_MyType mylib_MyType_New()`
 - `mylib.My_Type.my_function()` -> `void mylib_MyType_myFunction()`
 
+## Brackets
+- `()`: Records with either named (structs) or unnamed (tuples) fields.
+- `[]`: Dynamic-sized or fixed-sized lists, enumerations
+- `{}`: Scope for list of expressions
+
+## Function Calls
+- `myfunction a, b` calls function `myfunction()` with two parameters: `a`, `b`.
+
 ## Prelude (Keywords)
-- `def` - Declare data that can never be changed, is either included directly in
-  binary or optimized out.  Or Declare data that once set within scope, cannot
-  be changed.  Often optimized out.
-- `let` - Declare data that can change any number of times.
-- `if` - Conditional scope.
-- `assert` - Fail to compile if false
+- `def function(...) {}` - Define a function, returns unit `()`.
+- `def function(...) -> Type {}` - Define a function, returns `Type`.
+- `let field: value` - Declare a variable, infer type.
+- `let field Type: value` - Declare a variable, specifying type.
+- `if expression {}` - Execute code if expression is true.
+- `return expression` - Return function.
+- `for loop_field` - Infinite loop, manual break.
+- `for loop_field: iterator` - Iteration loop.
+- `break loop_field: expression` - Break loop by name.
+- `assert expression` - Fail to compile if expression can ever be false.
 
 ## 
 Declare mutable or immutable variable (depending on style):

@@ -9,11 +9,11 @@ Complex<NUM> {
 } Complex<NUM>
 
 # Constructor for Complex
-Complex<NUM>(self, real NUM, imag NUM) -> Complex<NUM> {
+Complex<NUM>(self, real NUM, imag NUM) -> Complex<NUM>:
     Complex { real, imag }
-} Complex<NUM>()
+: Complex<NUM>()
 
 # Comparison on boolean
-Complex=(self, other Complex) -> Bool {
-    (self.real = other.real and self.imag = other.imag)
-} Complex=()
+Complex<NUM> = (self, other Complex) -> Bool:
+    all(self.real = other.real, self.imag = other.imag)
+: Complex<NUM> = ()

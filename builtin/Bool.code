@@ -1,47 +1,64 @@
 #!aratar 0.1
 
-# Boolean, A true or false value
-Bool {
+## The boolean type, either true or false.
+##
+## Instead using conventional `&&`, `||`, and `!` operators on a boolean, use
+## the following functions:
+## - `all ...`
+## - `not ...`
+## - `any ...`
+let Bool [
     False: 0
     True : 1
-} Bool
+] let Bool
 
-# Comparison on boolean
-Bool=(self, other Bool) -> Bool {
-    self {
-        other: (True)
-        _    : (False)
-    } self
-} Bool=()
+## Returns `True` only if all of the `Bool`s are `True`.
+## 
+## ```aratar
+## assert (all Bool.True) = True
+## assert (all Bool.False) = True
+## assert (all Bool.True, Bool.False) = False
+## assert (all Bool.False, Bool.False, Bool.False) = False
+## ```
+def all: [bool Bool] -> Bool {
+    for i: bool {
+        if i = False {
+            return False
+        } if
+    } for i
+    True
+} def all
 
-# Negation on boolean.
-Bool.not(self, other Bool) -> Bool {
-    self {
-        False: (True)
-        True : (False)
-    } self
-} Bool.not()
+## Returns `True` only if all of the `Bool`s are `False`.
+## 
+## ```aratar
+## assert not[Bool.True] = False
+## assert not[Bool.False] = True
+## assert not[Bool.True, Bool.False] = False
+## assert not[Bool.False, Bool.False, Bool.False] = True
+## ```
+def not: [bool Bool] -> Bool {
+    for i: bool {
+        if i = True {
+            return False
+        } if
+    } for i
+    True
+} def not
 
-# Logical and
-Bool.and(self, other Bool) -> Bool {
-    self {
-        True: other
-        False : (False)
-    } self
-}
-
-# Logical or (inclusive)
-Bool.or(self, other Bool) -> Bool {
-    self {
-        True: True
-        False : other
-    } self
-}
-
-# Logical xor
-Bool.xor(self, other Bool) -> Bool {
-    self {
-        True: not other
-        False : other
-    } self
-}
+## Returns `True` if any of the `Bool`s are `True`, `False` otherwise.
+##
+## ```aratar
+## assert (any Bool.True) = True
+## assert (any Bool.False) = False
+## assert (any Bool.True, Bool.False) = True
+## assert (any Bool.False, Bool.False, Bool.False) = False
+## ```
+def any: [bool Bool] -> Bool {
+    for i: bool {
+        if i = True {
+            return True
+        } if
+    } for i
+    False
+} def any
