@@ -322,7 +322,7 @@ Short for "function".
 add_func(first: Int; second: Int): Int {
     # Return the value
     break add_func: first + second
-} add_func
+} add_func()
     
 div_func(
     first, second: Int
@@ -332,7 +332,7 @@ div_func(
         first / second
         rem: first % second
     )
-} div_func
+} div_func()
 ```
 
 # Literals and printing

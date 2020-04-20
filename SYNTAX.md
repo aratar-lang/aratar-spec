@@ -18,10 +18,14 @@ One-element tuples, arrays, and scopes are equivalent to just the elements.
 Function calls are separated by commas or newlines.
 
 ```aratar
-function_name                       # Call function w/ no args
+function_name()                     # Call function w/ no args
 function_name(value)                # Call function w/ 1 arg (*Simplification)
 function_name(value, value, value)  # Call function w/ 3 args
 function_name[value, value]         # Call function w/ variable args
+function_name {                     # Call function w/ closure
+    expression
+    expression
+}
 ```
 
 ## Methods
@@ -44,9 +48,9 @@ function_name[value, value]         # Call function w/ variable args
 #### Binary Operators
 These are the only methods that don't require 1 arg to be parenthesis.
 
-- `.` Method
-- `..` Range up to (`1.0 .. 2.0` is range from 1.0 to 2.0, not including 2.0)
-- `...` Range up to (`1.0 ... 2.0` is range from 1.0 to 2.0, including 2.0)
+- `.` General method
+- `,,` Range iterator up to (`0,,10` is range from 1.0 to 2.0, not including 2.0)
+- `;;` Range iterator up to (`0;;10` is range from 1.0 to 2.0, including 2.0)
 - `<<` Big Endian Bit Shift Left
 - `>>` Big Endian Bit Shift Right
 - `<` Less Than
@@ -82,85 +86,90 @@ These are the only methods that don't require 1 arg to be parenthesis.
 
 ```
 # Get the sine of 4.5, then add 1
-4.5.sin + 1
+4.5 .sin() + 1
 #
 let (a, b): (1, 2)
 ```
 
-## Built-in Functions (Keywords)
+## Keywords
 These functions are built in to the compiler.
 
 - `if` - Branching Control Flow.
-- `fn` - Define a function.
-- `let` - Let identifiers be in scope.
+- `else` - Branching Control Flow.
+- `match` - Pattern Matching.
+- `def` - Define a global constant (can never change).
+- `let` - Create a variable.  Once assigned, can't change value.
 - `for` - Data iteration.
-- `union` - Define tagged union (enum) type.
-- `struct` - Define data structure type.
-- `exit` - Exit from function, loop or program w/ optional value.
+- `type` - Define tagged union (enum) type, record (struct), or typed alias.
+- `return` - Return (optionally a value) from a scope (function or loop).
 
 ## Functions
 ```aratar
 # Pattern selector (operand, [method (returning Bool), argument, block]).
-if (a, b)
-    = (2, 3) {
+match (a, b) [
+    (2, 3) {
         out["a = 2, and b = 3"]
     }
-    = (2, let var) {
+    (2, var Int) {
         out["a = 2, and b ≠ 3, but rather b = ", var, "."]
     }
-    = let var {
+    var (Int, Int) {
         # Catch anything not covered yet (not a catch all - otherwise
         # this wouldn't compile because patterns that cover same input must have
         # same result).
         out["a ≠ 2, and b ≠ 3, (a, b) = ", var, "."]
     }
+]
 
-if all(a = 2, b = c = 3)
-    .then {
-        out["b & c are 3, a is 2"]
-    }
-    .else {
-        out["either b or c are not 3, or a is not 2"]
-    }
+if all[a = 2, b = c = 3] {
+    out["b & c are 3, a is 2"]
+} else {
+    out["either b or c are not 3, or a is not 2"]
+}
 
 fn function(argument_one Int, argument_two UInt32) Float32 {
-    # Function code.
+    let ret: 1.0
 
-    exit function 1.0
+    ret
 }
 
 ## This function takes a list of things and strings them together as Text.
 ##
 ## ```aratar
-## assert format["Hello, ", "World! ", 123] = "Hello, World! 123"
+## assert(format["Hello, ", "World! ", 123] = "Hello, World! 123")
 ## ```
-fn format[elements _] Text {
-    let return @Text: ""
-    for [element]: elements {
-        return ++: Text element
-        # If we wanted to return from the loop call function: `exit element`
+fn format[elements] Text {
+    let return_var @Text: ""
+    'a: for element: elements {
+        return_var ++: Text(element)
+        # If we wanted to return from the loop call function: `return 'a`
     }
-    exit format return
+    return_var
 }
 
-## Create a tagged union type (enum).
-union TaggedUnion SInt8
-    .VARIANT_A: 1
-    .VARIANT_B(int Int): 2
-    .VARIANT_C
+## Create a discriminated (tagged) union type (enum).
+type TaggedUnion SInt8 [
+    VARIANT_A: 1
+    VARIANT_B(int Int): 2
+    VARIANT_C
+]
 
 ## Create a data structure.  All fields are private (only methods can access).
-struct DataStruct
-    -> field_a SInt32
-    -> field_b Float32
-    -> field_c Text: "Default value"
+type DataStruct(
+    field_a SInt32
+    field_b Float32
+    field_c Text: "Default value"
+)
+
+## Create an alias for DataStruct, must cast to use as a DataStruct
+type SameDataStruct: DataStruct
 
 ## Create a constructor for DataStruct.
-fn DataStruct(field_a SInt32, field_b Float32) DataStruct {
-    DataStruct->field_a: field_a
-    DataStruct->field_b: field_b
-
-    exit DataStruct
+fn DataStruct(self, field_a SInt32, field_b Float32) DataStruct {
+    DataStruct(
+        :field_a:
+        :field_b:
+    )
 }
 ```
 
