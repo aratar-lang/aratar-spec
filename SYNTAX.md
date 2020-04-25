@@ -1,196 +1,128 @@
-# Syntax
+# Syntax (version 0.0.14)
 
-## Tokens
-- `[]` - Vector: A comma/newline-separated list of same-typed data.
-- `()` - Tuple: A comma/newline-separated list of different-typed data.
-- `{}` - Block: A comma/newline-separated list of function calls.
-- `name` - Identifier: A name of an item in scope.
-- `value` - Value: an identifier, tuple, or vector.
+## Syntactic Data Structures
 
-## Simplification (Parenthesis)
-One-element tuples, arrays, and scopes are equivalent to just the elements.
-
-- `(a)` → `a`
-- `[a]` → `a`
-- `{a}` → `a`
-
-## Function Calls
-Function calls are separated by commas or newlines.
+### Sequences of Expressions
+- `[]` - List: Same-typed (Literal Arrays/Vectors).
+- `()` - Tuple: Different-typed (Parameters, Literal Tuples)
+- `{}` - Block: Multiple expressions executed in sequence.
 
 ```aratar
-function_name()                     # Call function w/ no args
-function_name(value)                # Call function w/ 1 arg (*Simplification)
-function_name(value, value, value)  # Call function w/ 3 args
-function_name[value, value]         # Call function w/ variable args
-function_name {                     # Call function w/ closure
-    expression
-    expression
-}
-```
-
-## Methods
-Methods must start with one of: `.`, `=`, `<`, `>`, `~`, `+`, `-`, `*`, `^`,
-`?`, `/`, `%`, `&`, `|`, `!`, `:`, `@`, `$`; All are invalid characters in
-function names.  These characters are used to determine whether after a newline
-is actually a new function call, or a method call.
-
-```aratar
-function_name                       # Call function w/ no args
-function_name(value)                # Call function w/ 1 arg (*Simplification)
-function_name(value, value, value)  # Call function w/ 3 args
-function_name[value, value]         # Call function w/ variable args
-0.5.sin
-1 = 2
-```
-
-### Suggested Method Meanings
-
-#### Binary Operators
-These are the only methods that don't require 1 arg to be parenthesis.
-
-- `.` General method
-- `,,` Range iterator up to (`0,,10` is range from 1.0 to 2.0, not including 2.0)
-- `;;` Range iterator up to (`0;;10` is range from 1.0 to 2.0, including 2.0)
-- `<<` Big Endian Bit Shift Left
-- `>>` Big Endian Bit Shift Right
-- `<` Less Than
-- `>` More Than
-- `<=` Less Than / Equal To (`≤`)
-- `>=` More Than / Equal To (`≥`)
-- `=` Exact Equivalence
-- `!=` Not Equal To
-- `+` Add
-- `++` Concatenation
-- `-` Subtract
-- `*` Multiply
-- `**` Dot Product / Matrix Multiply
-- `^` Power (Exponent)
-- `/` Division
-- `//` Integer division
-- `%` Modulo
-- `%%` Is divisible by
-- `%/` Division with remainder joined as struct.
-- `&` Bitwise And
-- `|` Bitwise Or
-- `$` Bitwise Xor
-- `:` Assignment (Can be prepended by another operator, for example add assign:
-  `+:`)
-- `::` Swap
-
-#### Unary Operators
-- `!` Bitwise Not
-- `@` Get mutable reference by moving immutable reference, or share mutable ref.
-- `~` Dereference (Move so that old variable is out of scope)
-- `?` Try - If equal to 0 (or 0-equivalent), return 0 (or 0-equivalent).
-  Otherwise, evaluate to non-zero value.
-
-```
-# Get the sine of 4.5, then add 1
-4.5 .sin() + 1
-#
-let (a, b): (1, 2)
-```
-
-## Keywords
-These functions are built in to the compiler.
-
-- `if` - Branching Control Flow.
-- `else` - Branching Control Flow.
-- `match` - Pattern Matching.
-- `def` - Define a global constant (can never change).
-- `let` - Create a variable.  Once assigned, can't change value.
-- `for` - Data iteration.
-- `type` - Define tagged union (enum) type, record (struct), or typed alias.
-- `return` - Return (optionally a value) from a scope (function or loop).
-
-## Functions
-```aratar
-# Pattern selector (operand, [method (returning Bool), argument, block]).
-match (a, b) [
-    (2, 3) {
-        out["a = 2, and b = 3"]
+# Fixed-Sized List
+let list [Int; 4]: [1, 2, 3, 4]
+# Dynamic-Sized List
+let list [Int]: [1, 2, 3, 4]
+# Infer
+let list: [1, 2, 3, 4]
+# Tuple
+let tuple (Int, Text): (42, "Hello, world!")
+# Block
+let int Int: {
+    let mutable @Int: 4
+    for i: (0, 4) {
+        mutable +: 1
+    } # mutable = 8
+    mutable
+} # int = 8
+# Closure / Function
+let int_to_text Func(num Int) -> Text: (num Int) -> Text {
+    let ret @Text: num < 0 .if_else("-", "")
+    let num @Int: abs(num) # or num.abs()
+    while num != 0 {
+        let digit: num % 10
+        let digit: match digit [
+            0: "0",
+            1: "1",
+            2: "2",
+            3: "3",
+            4: "4",
+            5: "5",
+            6: "6",
+            7: "7",
+            8: "8",
+            9: "9",
+        ]
+        ret.append(digit)
+        num /: 10
     }
-    (2, var Int) {
-        out["a = 2, and b ≠ 3, but rather b = ", var, "."]
-    }
-    var (Int, Int) {
-        # Catch anything not covered yet (not a catch all - otherwise
-        # this wouldn't compile because patterns that cover same input must have
-        # same result).
-        out["a ≠ 2, and b ≠ 3, (a, b) = ", var, "."]
-    }
-]
-
-if all[a = 2, b = c = 3] {
-    out["b & c are 3, a is 2"]
-} else {
-    out["either b or c are not 3, or a is not 2"]
-}
-
-fn function(argument_one Int, argument_two UInt32) Float32 {
-    let ret: 1.0
-
     ret
 }
-
-## This function takes a list of things and strings them together as Text.
-##
-## ```aratar
-## assert(format["Hello, ", "World! ", 123] = "Hello, World! 123")
-## ```
-fn format[elements] Text {
-    let return_var @Text: ""
-    'a: for element: elements {
-        return_var ++: Text(element)
-        # If we wanted to return from the loop call function: `return 'a`
-    }
-    return_var
-}
-
-## Create a discriminated (tagged) union type (enum).
-type TaggedUnion SInt8 [
-    VARIANT_A: 1
-    VARIANT_B(int Int): 2
-    VARIANT_C
-]
-
-## Create a data structure.  All fields are private (only methods can access).
-type DataStruct(
-    field_a SInt32
-    field_b Float32
-    field_c Text: "Default value"
-)
-
-## Create an alias for DataStruct, must cast to use as a DataStruct
-type SameDataStruct: DataStruct
-
-## Create a constructor for DataStruct.
-fn DataStruct(self, field_a SInt32, field_b Float32) DataStruct {
-    DataStruct(
-        :field_a:
-        :field_b:
-    )
+# List Functions
+let multi_int_to_text Func[numbers Int] -> Text: [numbers Int] -> Text {
+    let ret @Text: ""
+    numbers.iter()
+        .do_skip_last(
+            { ret ++: int_to_text(num) }    # Iterate through all numbers
+            { ret ++: " " }                 # Iterate through all but last
+        )
+    ret
 }
 ```
 
-## Methods
+All of these sequences implement `Transparent T` on one element, where the
+element is type `T`.
+
 ```aratar
-# Or (One-line function call with trailing comma)
-assert(any[TRUE, FALSE = TRUE])
-
-# If all are true (One-line function call)
-assert(all[TRUE, FALSE = FALSE])
-
-# If exactly one is true (Multi-line function call)
-assert(one[TRUE, FALSE = TRUE])
+# Transparent allows using all types of brackets as parentheses
+assert({[(1 + 1) * 2] * 2} * 2 = 16)
 ```
 
-## Functions
-- `assert()`, `picture.send()`
-
+## Types
+```aratar
+enum Try E T: [FAIL(E): 0, PASS(T): 1]
+enum Opt T: [NONE: 0, SOME(T): 1]
+struct Complex: (real Real, imag Imaginary)
+typedef Text: [Grapheme]
+struct Range: (start Int, end: Int)
 ```
-# Assert
-assert(TRUE)
-# Send picture to display
-picture.send(picture)
+
+## Keyword List
+```aratar
+enum    # Define Assoicated Union Type
+struct  # Define Record Type
+typedef # Define Type Alias (Transparent, but type safe)
+let     # Declare a variable
+if      # Conditional test
+else    # Other path
+for     # Iterative Loops
+match   # Conditional branching based on pattern matching
+break   # Break out of innermost block (or a named block) - includes return
+while   # Infinite Loops / Conditional Loop
+```
+
+## Ascii Token List
+```
++ # Add / Identity
+- # Subtract / Negation
+* # Multiply
+/ # Divide
+% # Modulo
+^ # Exponentiate
+& # Bitwise And
+| # Bitwise Or
+$ # Bitwise XOR
+! # Bitwise Not
+? # Break out of innermost block (or named block) If Not Opt.SOME / Try.PASS
+< # Less
+> # More
+= # Equal
+. # "Self" Method Call
+, # Separator (In sequences)
+" # Text Literals
+; # Repetition (within [] lists)
+: # Assignment
+' # Naming of code blocks
+\ # Attributes
+` # Include raw text in file
+@ # Mutable Reference
+~ # Dereference (Move / Copy out of reference)
+<< # Shift Left
+>> # Shift Right
+<= # Less Than / Equal To (`≤`)
+>= # More Than / Equal To (`≥`)
+!= # Not Equal To
+++ # Concatenation
+** # Dot Product / Matrix Multiply
+// # Integer division
+%% # Is divisible by
 ```
