@@ -1,5 +1,50 @@
 # Syntax (version 0.0.14)
 
+## Examples
+```
+# Same as if [{a = 2 or a != 4} and {b = 5 or b = 7}]
+if a = 2 or a != 4
+    and b = 5 or b = 7
+{
+    info["a = ", a, " and b = ", b]
+}
+
+# Same as if [{a = 2 and b = 5} or {a != 4 and b = 7}]
+if a = 2 and b = 5
+    or a != 4 and b = 7
+{
+    info["a = ", a, " and b = ", b]
+}
+
+# Declare a function that adds a list of numbers together.
+let add: fn[numbers] -> _ {
+    let ret @: 0
+    for num :: numbers {
+        ret +: num
+    }
+    ret
+}
+
+let b: 42
+let var @: SOME(b)
+
+# Maybe change `var` #
+
+if var [
+    = SOME(b) {
+        info["`var` was not changed"]
+    }
+    = SOME(let a) {
+        info["`var` changed inner value to ", a]
+    }
+    = NONE {
+        info["`var` changed to NONE"]
+    }
+]
+
+
+```
+
 ## Syntactic Data Structures
 
 ### Sequences of Expressions
@@ -30,17 +75,17 @@ let int_to_text Fn(num Int) -> Text: fn(num Int) -> Text {
     let num @Int: abs(num)
     until num = 0 {
         let digit: num % 10
-        let digit: match digit [
-            0: "0",
-            1: "1",
-            2: "2",
-            3: "3",
-            4: "4",
-            5: "5",
-            6: "6",
-            7: "7",
-            8: "8",
-            9: "9",
+        let digit: if digit [
+            = 0 { "0" }
+            = 1 { "1" }
+            = 2 { "2" }
+            = 3 { "3" }
+            = 4 { "4" }
+            = 5 { "5" }
+            = 6 { "6" }
+            = 7 { "7" }
+            = 8 { "8" }
+            = 9 { "9" }
         ]
         ret ++: digit
         num /: 10
@@ -71,13 +116,13 @@ assert({[(1 + 1) * 2] * 2} * 2 = 16)
 
 ## Types
 ```aratar
-\Derive[ToString]
+$[Into String]
 enum Try E T: [FAIL(E): 0, PASS(T): 1]
-\Derive[ToString]
-enum Opt T: [NONE: 0, SOME(T): 1]
-struct Complex: (real Real, imag Imaginary)
+$[Into String, Into Try]
+enum Opt T: [NONE: 0, SOME(@T): 1]
+struct Complex: (real @Real, imag @Imaginary)
 typedef Text: [Grapheme]
-struct Range: (start Int, end: Int)
+struct Range: (start Int, end Int)
 
 # List of built-in types
 Fn()
@@ -104,12 +149,14 @@ enum    # Define Associated Union Type
 struct  # Define Record Type
 typedef # Define Type Alias (Transparent, but type safe)
 let     # Declare a variable
-if      # Conditional test
-else    # Other path
-match   # Conditional branching based on pattern matching
+if      # Conditional Branching / Pattern Matching
 return  # Early return out of innermost block or named block - includes break
 until   # Conditional Loop
 for     # Iterative Loops
+and     # Boolean and
+or      # Boolean or
+not     # Boolean not
+xor     # Boolean xor
 ```
 
 ## Ascii Token List
@@ -122,7 +169,7 @@ for     # Iterative Loops
 ^ # Exponentiate
 & # Bitwise And
 | # Bitwise Or
-$ # Bitwise XOR
+~ # Bitwise Xor
 ! # Bitwise Not
 ? # Break out of innermost block (or named block) If Not Opt.SOME / Try.PASS
 < # Less
@@ -134,10 +181,10 @@ $ # Bitwise XOR
 ; # Repetition (within [] lists)
 : # Assignment
 ' # Naming of code blocks
-\ # Attributes
 ` # Include raw text in file
 @ # Mutable Reference
-~ # Dereference (Move / Copy out of reference)
+\ # Dereference (Move / Copy out of reference)
+$ # Attribute
 << # Shift Left
 >> # Shift Right
 <= # Less Than / Equal To (`≤`)
@@ -157,18 +204,22 @@ $ # Bitwise XOR
 ^: # Exponentiate Assign
 &: # Bitwise And Assign
 |: # Bitwise Or Assign
-$: # Bitwise XOR Assign
+~: # Bitwise XOR Assign
 !: # Bitwise Not Assign
-!! # (Set) Not - Uses First Set as the domain.
+!! # (Set) Not - Uses Second Set as the domain.
 && # (Set) And
 || # (Set) Or
-$$ # (Set) Xor
+~~ # (Set) Xor
 ++: # Concatenate Assign
 --: # Truncate Assign
 >>: # Right Shift Assign
 <<: # Left Shift Assign
 //: # Integer Division Assign
 **: # Dot Product Assign
+!!: # (Set) Not Assign - Uses Second Set as the domain.
+&&: # (Set) And Assign
+||: # (Set) Or Assign
+~~: # (Set) Xor Assign
 ```
 
 ## Numeric Literals
