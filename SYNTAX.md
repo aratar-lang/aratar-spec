@@ -19,16 +19,16 @@ let tuple (Int, Text): (42, "Hello, world!")
 # Block
 let int Int: {
     let mutable @Int: 4
-    for i: (0, 4) {
+    for _ :: Range(0, 4) {
         mutable +: 1
     } # mutable = 8
     mutable
 } # int = 8
 # Closure / Function
-let int_to_text Func(num Int) -> Text: (num Int) -> Text {
-    let ret @Text: num < 0 .if_else("-", "")
-    let num @Int: abs(num) # or num.abs()
-    while num != 0 {
+let int_to_text Fn(num Int) -> Text: fn(num Int) -> Text {
+    let ret @Text: if_else(num < 0, "-", "")
+    let num @Int: abs(num)
+    until num = 0 {
         let digit: num % 10
         let digit: match digit [
             0: "0",
@@ -42,21 +42,23 @@ let int_to_text Func(num Int) -> Text: (num Int) -> Text {
             8: "8",
             9: "9",
         ]
-        ret.append(digit)
+        ret ++: digit
         num /: 10
     }
     ret
 }
 # List Functions
-let multi_int_to_text Func[numbers Int] -> Text: [numbers Int] -> Text {
+let multi_int_to_text Fn[numbers Int] -> Text: fn[numbers Int] -> Text {
     let ret @Text: ""
-    numbers.iter()
-        .do_skip_last(
-            { ret ++: int_to_text(num) }    # Iterate through all numbers
-            { ret ++: " " }                 # Iterate through all but last
-        )
+    for (i, num) :: enumerate(numbers) {
+        ret ++: int_to_text(num)
+        if i != len(numbers) - 1 {
+            ret ++: " "
+        }
+    }
     ret
 }
+assert(multi_int_to_text[1, 2, 3] = "1 2 3")
 ```
 
 All of these sequences implement `Transparent T` on one element, where the
@@ -69,25 +71,45 @@ assert({[(1 + 1) * 2] * 2} * 2 = 16)
 
 ## Types
 ```aratar
+\Derive[ToString]
 enum Try E T: [FAIL(E): 0, PASS(T): 1]
+\Derive[ToString]
 enum Opt T: [NONE: 0, SOME(T): 1]
 struct Complex: (real Real, imag Imaginary)
 typedef Text: [Grapheme]
 struct Range: (start Int, end: Int)
+
+# List of built-in types
+Fn()
+Bool
+Text
+Opt
+Int
+Float
+Num
+Double
+Grapheme
+AsciiText
+AsciiChar
+Data
+Imaginary
+Real
+Complex
+Dec
 ```
 
 ## Keyword List
 ```aratar
-enum    # Define Assoicated Union Type
+enum    # Define Associated Union Type
 struct  # Define Record Type
 typedef # Define Type Alias (Transparent, but type safe)
 let     # Declare a variable
 if      # Conditional test
 else    # Other path
-for     # Iterative Loops
 match   # Conditional branching based on pattern matching
-break   # Break out of innermost block (or a named block) - includes return
-while   # Infinite Loops / Conditional Loop
+return  # Early return out of innermost block or named block - includes break
+until   # Conditional Loop
+for     # Iterative Loops
 ```
 
 ## Ascii Token List
@@ -106,7 +128,7 @@ $ # Bitwise XOR
 < # Less
 > # More
 = # Equal
-. # "Self" Method Call
+. # Structure / Enum Access
 , # Separator (In sequences)
 " # Text Literals
 ; # Repetition (within [] lists)
@@ -121,8 +143,42 @@ $ # Bitwise XOR
 <= # Less Than / Equal To (`≤`)
 >= # More Than / Equal To (`≥`)
 != # Not Equal To
-++ # Concatenation
+++ # Concatenate
+-- # Truncate
 ** # Dot Product / Matrix Multiply
 // # Integer division
 %% # Is divisible by
+:: # Iterative Assign
++: # Add Assign
+-: # Subtract Assign
+*: # Multiply Assign
+/: # Divide Assign
+%: # Modulo Assign
+^: # Exponentiate Assign
+&: # Bitwise And Assign
+|: # Bitwise Or Assign
+$: # Bitwise XOR Assign
+!: # Bitwise Not Assign
+!! # (Set) Not - Uses First Set as the domain.
+&& # (Set) And
+|| # (Set) Or
+$$ # (Set) Xor
+++: # Concatenate Assign
+--: # Truncate Assign
+>>: # Right Shift Assign
+<<: # Left Shift Assign
+//: # Integer Division Assign
+**: # Dot Product Assign
+```
+
+## Numeric Literals
+```
+255
+0xFF
+0b1111_1111
+INF
+NAN
+255+3i
+3i
+6.626_070_15e-34
 ```
