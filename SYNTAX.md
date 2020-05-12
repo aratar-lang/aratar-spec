@@ -1,18 +1,18 @@
-# Syntax (version 0.0.14)
+# Syntax (version 0.0.15)
 
 ## Examples
-```
-# Same as if [{a = 2 or a != 4} and {b = 5 or b = 7}]
-if a = 2 or a != 4
-    and b = 5 or b = 7
-{
+```aratar
+# Use functional replacement for `and` and `or` statements.
+if all[
+    any[a = 2, a != 4]
+    any[b = 5, b = 7]
+] {
     info["a = ", a, " and b = ", b]
 }
-
-# Same as if [{a = 2 and b = 5} or {a != 4 and b = 7}]
-if a = 2 and b = 5
-    or a != 4 and b = 7
-{
+if any[
+    all[a = 2, b = 5]
+    all[a != 4, b = 7]
+] {
     info["a = ", a, " and b = ", b]
 }
 
@@ -41,8 +41,6 @@ if var [
         info["`var` changed to NONE"]
     }
 ]
-
-
 ```
 
 ## Syntactic Data Structures
@@ -153,14 +151,11 @@ if      # Conditional Branching / Pattern Matching
 return  # Early return out of innermost block or named block - includes break
 until   # Conditional Loop
 for     # Iterative Loops
-and     # Boolean and
-or      # Boolean or
-not     # Boolean not
-xor     # Boolean xor
 ```
 
 ## Ascii Token List
 ```
+# # Comment / Doc Comment
 + # Add / Identity
 - # Subtract / Negation
 * # Multiply
@@ -185,6 +180,8 @@ xor     # Boolean xor
 @ # Mutable Reference
 \ # Dereference (Move / Copy out of reference)
 $ # Attribute
+#! # Interpreter selector at the top of file
+#? # Module level documentation comment
 << # Shift Left
 >> # Shift Right
 <= # Less Than / Equal To (`≤`)
