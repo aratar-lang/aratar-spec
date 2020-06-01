@@ -1,4 +1,70 @@
-# Syntax (version 0.0.15)
+# Syntax (version 0.0.16)
+
+### Character Classes
+ - Whitespace: \\SPACE
+ - Alphabetic: a b c d e f g h i j k l m n o p q r s t u v w x y z
+   A B C D E F G H I J K L M N O P Q R S T U V W X Y Z \_
+ - Punctuation: ! " # $ % & ' ( ) * + - . / : ; < = > ? @ [ \ ] ^ \` \{ | \}
+ - Separator: \\n ,
+ - Integer: 0 1 2 3 4 5 6 7 8 9 \_
+ - Decimal: 0 1 2 3 4 5 6 7 8 9 \_ .
+ - Hexdigit: 0 1 2 3 4 5 6 7 8 9 A B C D E F \_
+
+### Literals
+Aratar has no character type, because the amount of data a grapheme cluster
+takes up is variable.
+
+```aratar
+1_234       # Integer
+3.5         # Decimal
+6.626_1e-34 # Scientific
+f2.0        # Floating point
+xF2_A8      # Hexadecimal
+b1010_1111  # Binary
+1.0+4.0i    # Complex Decimal
+f1.0+f4.0i  # Complex Floating point
+alphabetic  # Identifier (Lowercase only, no numbers allowed)
+"Text 1"    # UTF-8 Text
+Bool.TRUE   # Enum Variant (Uppercase only, no numbers allowed)
+@1_234      # Mutable data
+```
+
+### Built-In Functions ("Intrinsics", but not really)
+ - `fn`: Needed to define other functions, can't really get around that
+ - `let`: Needed to put variables into scope.
+ - `match: fn T R (variant T) [branches Map(Key(T), Fn() -> R)] -> R`: Branching
+   building block
+
+### Order of operations
+There is no explicit order of operations - use `{}` or functions when using
+operators.
+
+```aratar
+5 * x ^ 3 + 4 * x ^ 2 + 3 * x                # Doesn't compile
+{5 * {x ^ 3}} + {4 * {x ^ 2}} + {3 * x}      # Compiles
+sum[mul[5, x ^ 3], mul[4, x ^ 2], mul[3, x]] # Compiles
+```
+
+### Functions
+```aratar
+let sin: Fn(num Float) -> Float {
+    # code
+}
+sin(3.0)
+3.0.sin()
+
+# Function definition
+let if: fn T (conditional Bool) {then -> T} -> T {
+    match conditional [
+        TRUE: then
+        _: {}
+    ]
+}
+# Function Call
+if TRUE {
+    out.info("Always runs")
+}
+```
 
 ## Examples
 ```aratar
@@ -18,26 +84,26 @@ if any[
 
 # Declare a function that adds a list of numbers together.
 let add: fn[numbers] -> _ {
-    let ret @: 0
-    for num :: numbers {
+    let ret: @Num.ZERO
+    numbers.each fn(num) {
         ret +: num
     }
     ret
 }
 
 let b: 42
-let var @: SOME(b)
+let var: @SOME(b)
 
 # Maybe change `var` #
 
-if var [
-    = SOME(b) {
+match var [
+    SOME(b) {
         info["`var` was not changed"]
     }
-    = SOME(let a) {
+    SOME(let a) {
         info["`var` changed inner value to ", a]
     }
-    = NONE {
+    NONE {
         info["`var` changed to NONE"]
     }
 ]
@@ -61,29 +127,29 @@ let list: [1, 2, 3, 4]
 let tuple (Int, Text): (42, "Hello, world!")
 # Block
 let int Int: {
-    let mutable @Int: 4
-    for _ :: Range(0, 4) {
+    let mutable @Int: @4
+    Range(0, 4).each fn(_) {
         mutable +: 1
     } # mutable = 8
     mutable
 } # int = 8
 # Closure / Function
-let int_to_text Fn(num Int) -> Text: fn(num Int) -> Text {
+let Int.Text: fn(num) -> Text {
     let ret @Text: if_else(num < 0, "-", "")
     let num @Int: abs(num)
     until num = 0 {
         let digit: num % 10
         let digit: if digit [
-            = 0 { "0" }
-            = 1 { "1" }
-            = 2 { "2" }
-            = 3 { "3" }
-            = 4 { "4" }
-            = 5 { "5" }
-            = 6 { "6" }
-            = 7 { "7" }
-            = 8 { "8" }
-            = 9 { "9" }
+            0: { "0" }
+            1: { "1" }
+            2: { "2" }
+            3: { "3" }
+            4: { "4" }
+            5: { "5" }
+            6: { "6" }
+            7: { "7" }
+            8: { "8" }
+            9: { "9" }
         ]
         ret ++: digit
         num /: 10
@@ -91,17 +157,25 @@ let int_to_text Fn(num Int) -> Text: fn(num Int) -> Text {
     ret
 }
 # List Functions
-let multi_int_to_text Fn[numbers Int] -> Text: fn[numbers Int] -> Text {
-    let ret @Text: ""
-    for (i, num) :: enumerate(numbers) {
-        ret ++: int_to_text(num)
-        if i != len(numbers) - 1 {
-            ret ++: " "
+let multi_int_to_text: fn[numbers Int] -> Text {
+    let ret @Text: @""
+    numbers.enumerate().iter(fn((i, num)) {
+        ret ++: num.Text()
+        if i != sub(numbers.len, 1) {
+            ret ++: ", "
         }
-    }
+    })
     ret
 }
-assert(multi_int_to_text[1, 2, 3] = "1 2 3")
+assert(multi_int_to_text[1, 2, 3] = "1, 2, 3")
+
+let for: fn(iter Iterator $Item, loop Fn($Item)) {
+    let iter: @iter
+    match iter.next() [
+        SOME(item): { loop(item), for(iter, loop) }
+        NONE: { }
+    ]
+}
 ```
 
 All of these sequences implement `Transparent T` on one element, where the
@@ -217,16 +291,4 @@ $ # Attribute
 &&: # (Set) And Assign
 ||: # (Set) Or Assign
 ~~: # (Set) Xor Assign
-```
-
-## Numeric Literals
-```
-255
-0xFF
-0b1111_1111
-INF
-NAN
-255+3i
-3i
-6.626_070_15e-34
 ```
