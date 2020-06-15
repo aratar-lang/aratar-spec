@@ -1,0 +1,141 @@
+# Semantics (version 0.0.17)
+Unlike other languages, Aratar proves that your code never reaches unreachable
+code.  If the compiler can prove your code will reach unreachable code or loop
+infinitely, then your code won't compile.  The exception to this rule is async
+event loops.  Recursion is not allowed.
+
+## Borrow Checking
+Aratar uses a simple borrow-checking mechanism and hides all lifetimes.  All
+variables (and therefore borrows) go out of scope at the earliest possible
+location (statement where it's last used).  If you need to keep something in
+scope for longer you can use this trick:
+
+```aratar
+let var_a: 5
+# var_a would usually go out of scope here
+let var_b: 12
+let _: var_a # but actually goes out of scope here
+```
+
+```aratar
+let a: @0
+let b: @0
+
+let f: fn(@i, @j) { # ... # }
+
+# Doesn't Compile: `a` can't be borrowed in multiple places at the same time.
+f(@a, @a)
+
+# Compiles (only because `a` implements `Copy`, otherwise it would move).
+let b: @a # Evaluate a, make it a mutable reference, assign to b (copy).
+a(@a, @b)
+```
+
+## Type Checking / Bounds Checking
+```aratar
+# Won't compile
+let int Int{>= 0}: -1
+let hex Int: 0xA8
+
+# Will compile
+let int Int{>= -1}: -1
+let hex Hex: 0xA8
+```
+
+## Control Flow Analysis
+At compile time, unbounded types like `Int` must resolve to a specific type.  In
+the "Will Compile" example the type for `a` is `Int{>= 0}{<= 1}`.
+
+```aratar
+let loop: fn{Int}(a Int, b Int) {
+    if a = b {
+        return a
+    }
+    let a: a + 1
+    recursive(a, b)
+}
+
+# Won't Compile
+recursive(1, 0)
+
+# Will Compile
+recursive(0, 1)
+```
+
+### Non-Data Dependant Infinite Loops
+```aratar
+# Won't Compile
+let recursive: fn(a Int) {
+    recursive(a)
+}
+recursive(12)
+```
+
+### Iterators
+```aratar
+# An example infinite iterator.
+struct IteratorA: (index Int, upto Int)
+
+def IteratorA.Iterator(
+    next: fn(@iter) {
+        SOME(iter.index)
+    }
+)
+
+# An example finite iterator.
+struct IteratorB: (index @Int, upto Int)
+
+def IteratorB.Iterator(
+    next: Int(@iter) {
+        if iter.index = iter.upto {
+            NONE
+        } else {
+            iter.index +: 1
+            SOME(iter.index)
+        }
+    }
+)
+
+# Won't Compile
+pub start: ()(@env) {
+    IteratorA(index: 0, upto: 256)
+        .map(()(item) { env.info[item] })
+        .iterate()
+}
+
+# Will Compile
+pub start: fn(@env) {
+    IteratorB(index: 0, upto: 256)
+        .map(fn(item) { env.info[item] })
+        .iterate()
+}
+
+# Won't Compile
+pub start: fn(@env) {
+    IteratorB(index: 1, upto: 0).iter(Fn(item) {
+        env.info[item]
+    })
+}
+```
+
+### Exception: Async Event Loops
+```aratar
+# This function is entered once at the start of the program.
+pub start: fn(@sys) {
+    # ... (Initialization)
+    sys.on.input: input
+}
+
+# This function is entered whenever the program receives user input.
+def input: fn(@sys, event) {
+    if event [
+        TEXT(let text: &is_letter !is_whitespace) { sys.info[text] }
+        KEY(PRESS, let key: ESCAPE | Q) {
+            sys.info["Quit key used: ", key]
+            sys.quit()
+        }
+        MOUSE(let _x, let _y: _) { # FIXME # }
+        _: {}
+    ]
+}
+```
