@@ -1,4 +1,4 @@
-# Syntax (version 0.0.17)
+# Syntax (version 0.0.18)
 
 ### Character Classes
  - Whitespace: \\SPACE
@@ -27,6 +27,10 @@ alphabetic  # Identifier (Lowercase only, no numbers allowed)
 "Text 1"    # UTF-8 Text
 Bool.TRUE   # Enum Variant (Uppercase only, no numbers allowed)
 @1_234      # Mutable data
+[1, 2, 'a'] # Lists and tuples
+{ # ... # } # Function
+Type[a: 4]  # Struct
+["key": 45] # Map
 ```
 
 ### Declaring A Variable
@@ -36,33 +40,31 @@ let a: 1_000
 # Hexadecimal
 let a: 0xFF
 # A function
-let a: Opt.Int(text, parse) {
+let a: Fn[text, parse] -> Opt.Int {
     if parse [
-        TRUE { text.Int() } # Parse the text as an Int
+        TRUE { text.Int[] } # Parse the text as an Int
         # Return the first unicode codepoint as an Int
-        FALSE { text.codepoints().next().Opt.Int() }
+        FALSE { text.codepoints[].next[].Opt.Int[] }
     ]
 }
 
 # Fully written out
-let a Int.Min{0}: Int.Min{0}(1_000)
+let a Int.Min(0): Int.Min(0)[1_000]
 # Fully writen out Hexadecimal
-let a Hex: Hex(xFF)
+let a Hex: Hex[xFF]
 # A function fully written out
-let a Fn{Opt.Int}(p Text, q Bool): fn{Opt.Int}(text Text, parse Bool) {
-    let num: if parse [
-        TRUE: { text.Int() } # Parse the text as an Int
+let a Fn[p Text, q Bool] -> Opt.Int: Fn[text Text, parse Bool] -> Opt.Int {
+    if parse [
+        TRUE: { text.Int.Opt(Int) } # Parse the text as an Int
         # Return the first unicode codepoint as an Int
-        FALSE: { text.codepoints().next().Opt.Int() }
+        FALSE: { text.codepoints[].next[].Opt(Int) }
     ]
-    return num
 }
 ```
 
 ### Built-In Functions ("Intrinsics", but not really)
- - `fn`: Needed to define other functions, can't really get around that
  - `let`: Needed to put variables into scope.
- - `match: fn T R (variant T) [branches Map(Key(T), Fn() -> R)] -> R`: Branching
+ - `match: fn(T)(R)[variant T] [branches Map(Key(T), Fn() -> R)] -> R`: Branching
    building block
 
 ### Order of operations
@@ -70,80 +72,66 @@ There is no explicit order of operations - use `{}` or functions when using
 operators.
 
 ```aratar
-5 * x ^ 3 + 4 * x ^ 2 + 3 * x                # Doesn't compile
-{5 * {x ^ 3}} + {4 * {x ^ 2}} + {3 * x}      # Compiles
-sum[mul[5, x ^ 3], mul[4, x ^ 2], mul[3, x]] # Compiles
+5 * x ^ 3 + 4 * x ^ 2 + 3 * x                               # Doesn't compile
+(5 * (x ^ 3)) + (4 * (x ^ 2)) + (3 * x)                     # Compiles
+[[5, x ^ 3].mul[], [4, x ^ 2].mul[], [3, x].mul[]].sum[]    # Compiles
 ```
 
 ### Functions
 ```aratar
-let sin: fn(num Float) -> Float {
+let sin: Fn[num Float] -> Float {
     # code
 }
-3.0.sin()
-
-# Function definition
-let if: fn T (conditional Bool) {then -> T} -> T {
-    match conditional [
-        TRUE: then
-        _: {}
-    ]
-}
-# Function Call
-if TRUE {
-    out.info("Always runs")
-}
+3.0.sin[]
 ```
 
 ## Examples
 ```aratar
 # Use functional replacement for `and` and `or` statements.
-if [[a = 2, a != 4].any()
-    [b = 5, b = 7].any()
-   ].all()
+if [[a = 2, a != 4].any[]
+    [b = 5, b = 7].any[]
+   ].all[]
 {
-    info["a = ", a, " and b = ", b]
+    sys.out["a = ", a, " and b = ", b]
 }
-if [[a = 2, b = 5].all()
-    [a != 4, b = 7].all()
-   ].any()
+if [[a = 2, b = 5].all[]
+    [a != 4, b = 7].all[]
+   ].any[]
 {
-    info["a = ", a, " and b = ", b]
+    sys.out["a = ", a, " and b = ", b]
 }
 
 # Declare a function that adds a list of numbers together.
-let add: fn[numbers] -> _ {
+let add: Fn[numbers] -> _ {
     let ret: @Num.ZERO
-    numbers.iter(fn(num) {
-        ret +: num
-    })
+    numbers.iter[Fn[num] { ret +: num }]
     ret
 }
 
 let b: 42
-let var: @SOME(b)
+let var: @SOME[b]
 
 # Maybe change `var` #
 
-match var [
-    SOME(b) {
-        info["`var` was not changed"]
+var.match[
+    SOME[b]: {
+        sys.out["`var` was not changed"]
     }
-    SOME(let a) {
-        info["`var` changed inner value to ", a]
+    SOME[let a]: {
+        sys.out["`var` changed inner value to ", a]
     }
-    NONE {
-        info["`var` changed to NONE"]
+    NONE: {
+        sys.out["`var` changed to NONE"]
     }
 ]
 ```
 
 ## Syntactic Data Structures
 
-### Sequences of Expressions
-- `[]` - List: Same-typed (Literal Arrays/Vectors).
-- `()` - Tuple: Different-typed (Parameters, Literal Tuples)
-- `{}` - Block: Multiple expressions executed in sequence.
+### Brackets
+- `[]` - List: Literal Arrays/Vectors, Parameters, Tuples, Maps, Sets.
+- `{}` - Scope: Multiple expressions executed in sequence.
+- `()` - Parens: Generics, single expression, group in pattern matching
 
 ```aratar
 # Fixed-Sized List
@@ -153,23 +141,22 @@ let list [Int]: [1, 2, 3, 4]
 # Infer
 let list: [1, 2, 3, 4]
 # Tuple
-let tuple (Int, Text): (42, "Hello, world!")
-# Block
+let tuple [Int, Text]: [42, "Hello, world!"]
+# Scope
 let int Int: {
     let mutable @Int: @4
-    Range(0, 4)
-        .map(fn(_) { mutable +: 1 })
-        .iterate()
+    Range[0, 4]
+        .map[Fn[_] { mutable +: 1 }]
     mutable
 } # int = 8
 # Closure / Function
-let Int.Text: fn(num) -> Text {
-    let ret @Text: (num < 0).then_else("-", "")
-    let num @Int: num.abs()
+let Int.Text: Fn[num] -> Text {
+    let ret @Text: (num < 0).then{ "-" }.else{ "" }
+    let num @Int: num.abs[]
 
-    (fn() {
+    Fn[] {
         let digit: num % 10
-        let digit: if digit [
+        let digit: digit.match[
             0: { "0" }
             1: { "1" }
             2: { "2" }
@@ -183,52 +170,37 @@ let Int.Text: fn(num) -> Text {
         ]
         ret ++: digit
         num /: 10
-        if num = 0 [
-            TRUE { NONE }
-            FALSE { SOME(()) }
-        ]
-    })
-        .FnIter()
-        .iterate()
+        (num = 0).then{ None }.else{ Some[[]] }
+    }
+        .Iter
 
     ret
 }
 # List Functions
-let multi_int_to_text: fn[numbers Int] -> Text {
+let multi_int_to_text: Fn[numbers Int] -> Text {
     let ret @Text: @""
-    numbers.enumerate()
-        .map(fn((i, num)) {
-            ret ++: num.Text()
-            if i != sub(numbers.len, 1) {
-                ret ++: ", "
-            }
-        })
-        .iterate()
+    numbers.enumerate[]
+        .map Fn[i, num] {
+            ret ++: num.Text
+            (i != numbers.len - 1).then{ ret ++: ", " }
+        }
     ret
 }
-assert(multi_int_to_text[1, 2, 3] = "1, 2, 3")
-```
-
-All of these sequences implement `Transparent T` on one element, where the
-element is type `T`.
-
-```aratar
-# Transparent allows using all types of brackets as parentheses
-assert({[(1 + 1) * 2] * 2} * 2 = 16)
+assert[multi_int_to_text[1, 2, 3] = "1, 2, 3"]
 ```
 
 ## Types
 ```aratar
-$[Into String]
-enum Try E T: [FAIL(E): 0, PASS(T): 1]
-$[Into String, Into Try]
-enum Opt T: [NONE: 0, SOME(@T): 1]
-struct Complex: (real @Real, imag @Imaginary)
+$Into String
+enum Try(E, T)[FAIL[E]: 0, PASS[T]: 1]
+$Into String, $Into Try
+enum Opt(T)[NONE: 0, SOME[@T]: 1]
+struct Complex[real @Real, imag @Imaginary]
 typedef Text: [Grapheme]
-struct Range: (start Int, end Int)
+struct Range[start Int, end Int]
 
 # List of built-in types
-Fn()
+Fn
 Bool
 Text
 Opt
@@ -250,19 +222,16 @@ Dec
 ```aratar
 # Global Data Definitions
 use     # Import a library/module definition `use aratar.fft{0.1}`
-pub     # Public definition `pub fft: fn(@samples) { # ... # }`
-def     # Private definition `def fft: fn(@samples) { # ... # }`
+def     # Exported variable `def fft: Fn[@samples] { # ... # }`
 # Local Data Definitions
 let     # Declare a variable `let @samples: [1, 2, 3, 4, 5, 6, 7, 8]`
 # Global Type definitons
 enum    # Define Associated Union Type
 struct  # Define Record Type
-typedef # Define Type Alias (Transparent, but type safe)
-# Literal Constructs
-fn      # "Function" A function defintion `def fft: fn(@samples) { # ... # }`
+typedef # Define Type-Safe Type Alias (Must use casting)
 # Control Flow
 if      # Conditional Branching / Pattern Matching
-return  # Early return out of a function
+return  # Early exit from outermost scope or named inner scope
 ```
 
 ## Ascii Token List
@@ -277,7 +246,7 @@ return  # Early return out of a function
 & # Pattern Matching Filter (Can be chained)
 | # Pattern Matching Or (Can be chained)
 ! # Pattern Matching Not
-? # Try: Function Early Return If Not `Opt.SOME` / `Result.OK`
+? # Try: Early return on error for outermost scope or named inner scope.
 < # Less
 > # More
 = # Equal
