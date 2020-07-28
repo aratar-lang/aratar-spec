@@ -1,4 +1,4 @@
-# Semantics (version 0.0.18)
+# Semantics (version 0.0.19)
 Unlike other languages, Aratar proves that your code never reaches unreachable
 code.  If the compiler can prove your code will reach unreachable code or loop
 infinitely, then your code won't compile.  The exception to this rule is async
@@ -21,117 +21,120 @@ let _: var_a # but actually goes out of scope here
 let a: @0
 let b: @0
 
-let f: Fn[@i, @j] { # ... # }
+let f: Fn(@i, @j) { # ... # }
 
 # Doesn't Compile: `a` can't be borrowed in multiple places at the same time.
-f[@a, @a]
+f(@a, @a)
 
 # Compiles (only because `a` implements `Copy`, otherwise it would move).
 let b: @a # Evaluate a, make it a mutable reference, assign to b (copy).
-a[@a, @b]
+a(@a, @b)
 ```
 
 ## Type Checking / Bounds Checking
 ```aratar
 # Won't compile
-let int Int.Min(0): -1
+let int Int[0~]: -1
 let hex Int: 0xA8
 
 # Will compile
-let int Int.Min(-1): -1
+let int Int[-1~]: -1
 let hex Hex: 0xA8
 ```
 
 ## Control Flow Analysis
 At compile time, unbounded types like `Int` must resolve to a specific bounded
-type.  In the "Will Compile" example the type for `a` is `Int.Min(0).Max(1)`.
+type.  In the "Will Compile" example the type for `a` is `Int[0~1]`.
 
 ```aratar
-let loop: Fn[a Int, b Int] -> Int {
-    (a = b).then { return a }
+let loop: Fn(a: Int, b: Int) -> Int {
+    if a = b { return a }
     let a: a + 1
-    loop[a, b]
+    loop(a, b)
 }
 
 # Won't Compile
-loop[1, 0]
+loop(1, 0)
 
 # Will Compile
-loop[0, 1]
+loop(0, 1)
 ```
 
 ### Non-Data Dependant Infinite Loops
 ```aratar
 # Won't Compile
-let recursive: fn[a Int] {
-    recursive[a]
+let recursive: fn(a: Int) {
+    recursive(a)
 }
-recursive[12]
+recursive(12)
 ```
 
 ### Iterators
 ```aratar
 # An example infinite iterator.
-struct IteratorA[index Int, upto Int]
+struct IteratorA(index Int, upto Int)
 
 let IteratorA.Iterator(
-    next: Fn[@iter] {
-        SOME[iter.index]
+    next: Fn(@iter) {
+        Some(iter.index)
     }
 )
 
 # An example finite iterator.
-struct IteratorB[index @Int, upto Int]
+struct IteratorB(index @Int, upto Int)
 
 let IteratorB.Iterator: [
-    next: Fn[@iter] -> Int {
+    next: Fn(@iter) -> Int {
         if iter.index = iter.upto {
-            NONE
+            None()
         } else {
             iter.index +: 1
-            SOME[iter.index]
+            Some(iter.index)
         }
     }
 ]
 
 # Won't Compile
-def start: Fn[@env] {
-    IteratorA[index: 0, upto: 256]
-        .map[Fn[item] { env.info[item] }]
-        .iterate[]
+def start: Fn(@env) {
+    for item: IteratorA(index: 0, upto: 256) {
+        Term.print(item)
+    }
 }
 
 # Will Compile
-def start: Fn[@env] {
-    IteratorB[index: 0, upto: 256]
-        .map[Fn[item] { env.info[item] }]
-        .iterate[]
+def start: Fn(@env) {
+    for item: IteratorB(index: 0, upto: 256) {
+        Term.print(item)
+    }
 }
 
 # Won't Compile
-def start: Fn[@env] {
-    IteratorB[index: 1, upto: 0]
-        .iter[Fn[item] { env.info[item] }]
+def start: Fn(@env) {
+    for item: IteratorB(index: 1, upto: 0) {
+        Term.print(item)
+    }
 }
 ```
 
 ### Exception: Async Event Loops
 ```aratar
 # This function is entered once at the start of the program.
-def start: Fn[@sys] {
+def start(@sys) {
     # ... (Initialization)
-    sys.input[input]
+    sys.input(input)
 }
 
 # This function is entered whenever the program receives user input.
-let input: Fn[@sys, event] {
+let input: Fn(@sys, event) {
     if event [
-        TEXT[let text &is_letter[] !is_whitespace[]] { sys.info[text] }
-        KEY[PRESS, let key =(ESCAPE | Q)] {
-            sys.out["Quit key used: ", key]
-            sys.quit[]
+        Text(text: text.is_letter() & !text.is_whitespace()) {
+            Term.print(text)
         }
-        MOUSE[let _x, let _y] { # FIXME # }
+        Key(Press, key: Escape() | Q()) {
+            Term.print("Quit key used: ", key)
+            sys.quit()
+        }
+        Mouse(_x: _, _y: _) { # FIXME # }
         _: {}
     ]
 }
@@ -140,21 +143,21 @@ let input: Fn[@sys, event] {
 ## Visibility
 ```aratar
 # Define a struct (exported by default)
-struct Struct[
+struct Struct(
     # Not Exported
     let value_a @Int
     # Exported
     def value_b @Hex
     # Exported constructor
-    def: Fn[] -> Struct {
-        Struct[value_a: 222, value_b: 0xDE]
+    def: Fn() -> Struct {
+        Struct(value_a: 222, value_b: 0xDE)
     }
-]
+)
 
 # Call constructor (compiles)
-let struct: Struct[value_a: 222, value_b: 0xDE]
+let struct: Struct(value_a: 222, value_b: 0xDE)
 # Load (Read) and print (compiles)
-sys.out[struct.value_a]
+Term.print(struct.value_a)
 # Store (Assign) (compiles)
 struct.value_b: 0x00
 ```
@@ -165,15 +168,15 @@ In another module:
 use main[Struct]
 
 # Call constructor (doesn't compile, raw constructors are not exported)
-let struct: Struct[value_a: 222, value_b: 0xDE]
+let struct: Struct(value_a: 222, value_b: 0xDE)
 # Load (Read) and print (doesn't compile, let statements not exported)
-sys.out[struct.value_a]
+Term.print(struct.value_a)
 # Store (Assign) (doesn't compile, public struct items are always read-only)
 struct.value_b: 0x00
 
 # Compiles:
 let struct: Struct
-sys.out[struct.value_b]
+Term.print(struct.value_b)
 ```
 
 ## Equivalence And Lazy Expression
@@ -184,7 +187,7 @@ sys.out[struct.value_b]
 is the same as:
 
 ```aratar
-'scope Fn[] { }
+'scope Fn() { }
 ```
 
 ### Lazy Expressions
@@ -202,9 +205,10 @@ expr_c # Type: [[]; 1]
 let state: @10
 let iter: {
     state -: 1
-    (state = 0)
-        .then { NONE }
-        .else { SOME[state + 1] }
+    match state [
+        0: { None() }
+        _: { Some(state + 1) }
+    }
 }
 let iter: iter.Iter.map Fn[number] {
     out[number]
@@ -219,6 +223,6 @@ compile time.
 
 ```aratar
 let list: [1, 2, 3]
-list.get[2] # Compiles
-list.get[3] # Doesn't compile
+list.get(2) # Compiles
+list.get(3) # Doesn't compile
 ```
