@@ -1,38 +1,91 @@
-# Syntax (version 0.0.19)
-
-### Character Classes
- - Whitespace: \\SPACE
- - Alphabetic: a b c d e f g h i j k l m n o p q r s t u v w x y z
-   A B C D E F G H I J K L M N O P Q R S T U V W X Y Z \_
- - Punctuation: ! " # $ % & ' ( ) * + - . / : ; < = > ? @ [ \ ] ^ \` \{ | \}
- - Separator: \\n ,
- - Integer: 0 1 2 3 4 5 6 7 8 9 \_
- - Decimal: 0 1 2 3 4 5 6 7 8 9 \_ .
- - Hexdigit: 0 1 2 3 4 5 6 7 8 9 A B C D E F \_
+# Syntax (version 0.0.20)
 
 ### Literals
-Aratar has no character type, because the amount of data a grapheme cluster
-takes up is variable.
-
-```aratar
-1_234       # Integer
-3.5         # Decimal
-6.626_1e-34 # Scientific
-2.0f        # Floating point
-0xF2_A8     # Hexadecimal
-0b1010_1111 # Binary
-1.0+4.0i    # Complex Decimal
-1.0f+f4.0i  # Complex Floating point
-alphabetic  # Identifier (Lowercase only, no numbers allowed)
-"Text 1"    # UTF-8 Text
-Bool.TRUE   # Enum Variant (Uppercase only, no numbers allowed)
-@1_234      # Mutable data
-[1, 2, 3]   # Lists
-(1, 2, 'a') # Tuples
-{ # ... # } # Scope
-Type[a: 4]  # Struct
-["key": 45] # Map
-```
+Starts with:
+ - `\t`|`\r`: Compiler Error
+ - `_`:
+   - `0~9`|`a-z`|`_`: Unused identifier
+   - `A-Z`: Compiler error
+ - `a`~`z`:
+   - `0~9`|`a-z`|`_`: Identifier (functions, variables, and keywords)
+     - `import`: Import a library/module definition `import aratar.fft{0.1}`
+     - `export`: Exported public definition `export fft: Fn[@samples] { # ... # }`
+     - `def`: Definition
+     - `let`: Declare a variable `let samples: @[1, 2, 3, 4, 5, 6, 7, 8]`
+     - `enum`: Define Associated Union Type
+     - `struct`: Define Record Type
+     - `typedef`: Define Type-Safe Type Alias (Must use casting)
+     - `for`: Iteration
+     - `if`: Conditional Branching
+     - `else`: Alternative Conditional Branch
+     - `elif`: Compressed `else { if {} }`
+     - `match`: Pattern matching
+     - `return`: Early exit from outermost scope or named inner scope
+     - `syscall`: A syscall (unsafe, can only call from module named "sys")
+   - `A`~`Z`: Compiler error
+ - `A`~`Z`:
+   - `0`~`9`|`A`~`Z`: Type (constants, structs, enums, and enum variants)
+   - `a`~`z`|`_`: Copmiler Error
+ - `0`~`9`: Literal Number
+   - `0`~`9`|`_`|`.`: Decimal (base 10) Literal
+     - `e`: ×10^x
+     - `f`: Floating point
+     - `i`|`j`: Imaginary
+   - `0x`: Hexadecimal (base 16) Literal
+     - `0`~`9`|`A`~`F`: Hexadecimal
+     - `a`~`z`|`G`~`Z`: Compiler Error
+   - `0b`: Binary (base 2) Literal
+     - `0~1`: Binary
+   - `0o`: Octal (base 8) Literal
+     - `0~7`: Octal
+ - `"`: Literal Text (Until `"`, unless it's `""` then include `"` in literal)
+ - `'`: Loop Label
+ - `:`: Assignment
+ - `%`|`&`|`*`|`+`|`/`|`;`|`<`|`=`|`>`|`^`|`|`|`~`: Binary Operator
+   - **Binary Operators**
+   - `+`: Addition (`+`)
+   - `++`: Concatenate / Join (`⨝`)
+   - `+-`: Either Positive or Negative (`±`)
+   - `*`: Multiplication (`×`)
+   - `**`: Dot Product / Matrix Multiply (`·`)
+   - `/`: Division (`÷`)
+   - `//`: Integer division (rounding to zero `/`)
+   - `%`: Modulo (`8 % 3 = 2`, `-8 % 3 = 1`, `8 % -3 = -1`, `-8 % -3 = -2`)
+   - `%%`: Remainder (`8 % 3 = 2`, `-8 % 3 = -2`, `8 % -3 = -2`, `-8 % -3 = 2`)
+   - `%=`: Is divisible by
+   - `^`: Power (`4 ^ 2 = 4² = 16`)
+   - `^^`: Bitwise XOR (`^`)
+   - `&`: Pattern Matching And / Sets Intersection (`∩`)
+   - `&&`: Bitwise AND (`&`)
+   - `|`: Pattern Matching Or / Sets Union (`∪`)
+   - `||`: Bitwise OR (`|`)
+   - `=`: Equal (`=`)
+   - `>`: Greater Than (`>`)
+   - `>=`: Greater Than or Equal (`≥`)
+   - `>>`: Right Shift (`»`)
+   - `<`: Less Than (`<`)
+   - `<=`: Less Than or Equal (`≤`)
+   - `<<`: Left Shift (`«`)
+   - `;`: Data Repetition (`"abc" ; 2 = "abcabc"`, `(4; 3, 5) = (4, 4, 4, 5)`)
+   - `~`: Inclusive Range (For pattern matching and type bounds)
+ - `!`|`@`|`?`|`-`: Possibly Unary Operator
+   - `-`: Negation, Subtraction (`-`)
+   - `!`: Pattern Matching Not, Bitwise Not (`¬`)
+   - `!=`: Not equal (`≠`)
+   - `@`: Mutable Reference
+   - `?`: Try: Early return on error for outermost scope or named inner scope.
+ - `#`: Comment Open (Until newline or `#`)
+ - `$`: Auto-Derive Conversion Implementations
+ - `(`|`)`: Tuple/Arguments/Order Open / Close
+ - `[`|`]`: List/Map/Set/Generics Open / Close
+ - `{`|`}`: Scope/Order Open / Close
+ - `.`:
+   - `.`: Access
+   - `...`: Variable arguments
+ - `\`: Equivalent to Rust's `r#`
+ - ```: Multi-line comment
+ - ` `: Token Separator
+ - `,`|`\n`: List Separator
 
 ### Declaring A Variable
 ```aratar
@@ -128,11 +181,6 @@ var.match[
 
 ## Syntactic Data Structures
 
-### Brackets
-- `[]` - List: Literal Arrays/Vectors, Generics, Maps, Sets.
-- `{}` - Scope: Multiple expressions executed in sequence, grouping brackets.
-- `()` - Tuple: Tuples, Parameters
-
 ```aratar
 # Fixed-Sized List
 let list: [Int; 4](1, 2, 3, 4)
@@ -190,12 +238,19 @@ assert[multi_int_to_text(1, 2, 3) = "1, 2, 3"]
 
 ## Types
 ```aratar
-$Into String
-enum Try{E, T}[Err(E): 0, Ok(T): 1]
-$Into String, $Into Try
+$Text
+enum Try[E, T](
+    Err(E): 0
+    Ok(T): 1
+)
+
+$Text, $Try
 enum Opt{T}[NONE: 0, SOME[@T]: 1]
+
 struct Complex(define real: @Real, define imag: @Imaginary)
+
 typedef Text: [Grapheme]
+
 struct Range(define start: Int, define end: Int)
 
 # List of built-in types
@@ -215,67 +270,6 @@ Imaginary
 Real
 Complex
 Dec
-```
-
-## Keyword List
-```aratar
-# Global Data Definitions
-use  # Import a library/module definition `import aratar.fft{0.1}`
-api  # Exported public definition `export fft: Fn[@samples] { # ... # }`
-def  # Private definition (not exported)
-# Local Data Definitions
-let     # Declare a variable `let samples: @[1, 2, 3, 4, 5, 6, 7, 8]`
-# Global Type definitons
-enum    # Define Associated Union Type
-struct  # Define Record Type
-typedef # Define Type-Safe Type Alias (Must use casting)
-# Control Flow
-if      # Conditional Branching
-match   # Pattern matching
-return  # Early exit from outermost scope or named inner scope
-```
-
-## Ascii Token List
-```
-# # Comment / Doc Comment
-+ # Add / Identity
-- # Subtract / Negation
-* # Multiply
-/ # Divide
-% # Modulo
-^ # Exponentiate
-& # Pattern Matching And / Intersection Operator
-| # Pattern Matching Or / Union Operator
-! # Not Operator (includes bitwise)
-? # Try: Early return on error for outermost scope or named inner scope.
-< # Less
-> # More
-= # Equal
-. # Structure / Enum Access
-, # Separator (In sequences)
-" # Text Literals
-; # Repetition (within [] lists)
-: # Assignment (can have any operator before it to combine, not all work)
-' # Naming of code blocks
-` # Include raw text in file
-@ # Mutable Reference
-$ # Attribute
-~ # Inclusive range (Example: `1~10` "one thru ten")
-&& # Bitwise And
-|| # Bitwise Or
-^^ # Bitwise Xor
-++ # Concatenate
--- # Truncate
-** # Dot Product / Matrix Multiply
-// # Integer division
-%% # Is divisible by
-<< # Shift Left
->> # Shift Right
-<= # Less Than / Equal To (`≤`)
->= # More Than / Equal To (`≥`)
-!= # Not Equal To
-#! # Interpreter selector at the top of file
-#? # Module level documentation comment
 ```
 
 # Ideas
