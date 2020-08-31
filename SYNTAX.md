@@ -1,6 +1,6 @@
 # Syntax (version 0.0.20)
 
-### Literals
+## Token Types
 Starts with:
  - `\t`|`\r`: Compiler Error
  - `_`:
@@ -22,218 +22,199 @@ Starts with:
      - `match`: Pattern matching
      - `return`: Early exit from outermost scope or named inner scope
      - `syscall`: A syscall (unsafe, can only call from module named "sys")
+     - `all`: Built-in Function (`all(TRUE, TRUE) = TRUE`)
+     - `any`: Built-in Function (`any(FALSE, TRUE) = TRUE`)
    - `A`~`Z`: Compiler error
  - `A`~`Z`:
-   - `0`~`9`|`A`~`Z`: Type (constants, structs, enums, and enum variants)
-   - `a`~`z`|`_`: Copmiler Error
- - `0`~`9`: Literal Number
-   - `0`~`9`|`_`|`.`: Decimal (base 10) Literal
+   - `0`~`9`|`A`~`Z` | `a`~`z` | `_`: Type (constants, structs, enums, and enum variants)
+     - `NAN`: Literal Constant Not A Number
+     - `INF`: Literal Constant Infinity
+     - `TRUE`: Literal Constant True
+     - `FALSE`: Literal Constant False
+     - `SOME`: Literal Constant Opt.Some
+     - `NONE`: Literal Constant Opt.None
+     - `OK`: Literal Constant Try.Ok
+     - `ERR`: Literal Constant Try.Err
+     - `DEFAULT`: Literal Constant Default Value
+ - `0`~`9`: Literal Constant Number
+   - `0`~`9`|`_`|`.`: Decimal (base 10) Literal Constant
      - `e`: ×10^x
-     - `f`: Floating point
-     - `i`|`j`: Imaginary
-   - `0x`: Hexadecimal (base 16) Literal
-     - `0`~`9`|`A`~`F`: Hexadecimal
+     - `f`: Floating point Literal Constant
+     - `i`|`j`: Imaginary Literal Constant
+   - `0x`: Hexadecimal (base 16) Literal Constant
+     - `0`~`9`|`A`~`F`: Hexadecimal Literal Constant
      - `a`~`z`|`G`~`Z`: Compiler Error
-   - `0b`: Binary (base 2) Literal
-     - `0~1`: Binary
-   - `0o`: Octal (base 8) Literal
-     - `0~7`: Octal
+   - `0b`:
+     - `0~1`: Binary (base 2) Literal Constant
+   - `0o`:
+     - `0~7`: Octal (base 8) Literal Constant
  - `"`: Literal Text (Until `"`, unless it's `""` then include `"` in literal)
+   - `""`: Empty Text
+ - `#`: Comment Open (Until newline or `#`)
+   - `##`: Empty Comment
  - `'`: Loop Label
  - `:`: Assignment
- - `%`|`&`|`*`|`+`|`/`|`;`|`<`|`=`|`>`|`^`|`|`|`~`: Binary Operator
-   - **Binary Operators**
-   - `+`: Addition (`+`)
-   - `++`: Concatenate / Join (`⨝`)
+   - `::`: Swap
+ - `%`|`&`|`*`|`+`|`/`|`;`|`<`|`=`|`>`|`^`|`|`: Binary Operator (limited to 4
+   ascii graphemes)
+   - `+`: (Vector) Addition (`[4, 3] + [2, 4] = [6, 7]`)
+   - `+;`: Multi-Addition (`[1, 2, 3] +; 1 = [2, 3, 4]`)
+   - `++`: Concatenate / Join (`"ab" ++ "cd" = "abcd"`)
+   - `++;`: Multi-Join (`["a", "b", "c"] ++; "d" = ["ad", "bd", "cd"]`)
    - `+-`: Either Positive or Negative (`±`)
-   - `*`: Multiplication (`×`)
-   - `**`: Dot Product / Matrix Multiply (`·`)
-   - `/`: Division (`÷`)
-   - `//`: Integer division (rounding to zero `/`)
-   - `%`: Modulo (`8 % 3 = 2`, `-8 % 3 = 1`, `8 % -3 = -1`, `-8 % -3 = -2`)
-   - `%%`: Remainder (`8 % 3 = 2`, `-8 % 3 = -2`, `8 % -3 = -2`, `-8 % -3 = 2`)
-   - `%=`: Is divisible by
-   - `^`: Power (`4 ^ 2 = 4² = 16`)
-   - `^^`: Bitwise XOR (`^`)
+   - `*`: (Vector) Multiplication (`[4, 3] * [2, 4] = [8, 12]`)
+   - `*;`: Multi-Multiplication (`[1, 2, 3] *; 3 = [3, 6, 9]`)
+   - `**`: Dot Product / Matrix Multiply (`[1, 2, 3] ** [2, 1, 1] = [7] = 7`)
+   - `**;`: Multi-Dot Product (`[[1, 2], [3, 4]] **; [5, 6] = [17, 39]`)
+   - `/`: (Vector) Division (`16 / 6 = Frac(8, 3)`)
+   - `/;`: Multi-Division (`[16, 32] /; 6 = [Frac(8, 3), Frac(16, 3)]`)
+   - `//`: Integer division rounding to zero (`16 / 6 = 2`, `-16 / 6 = -2`)
+   - `//;`: Multi-Integer division (`[16, 32] //; 6 = [2, 5]`)
+   - `%`: (Vector) Modulo (`8 % 3 = 2`, `-8 % 3 = 1`, `8 % -3 = -1`, `-8 % -3 = -2`)
+   - `%;`: Multi-Modulo (`[8, 9] %; 3 = [2, 0]`)
+   - `%%`: (Vector) Remainder (`8 % 3 = 2`, `-8 % 3 = -2`, `8 % -3 = -2`, `-8 % -3 = 2`)
+   - `%%;`: Multi-Modulo (`[8, 9] %%; 3 = [2, 0]`)
+   - `%=`: (Vector) Is divisible by (`(8 %= 3) = FALSE`, `(0 %= 3) = TRUE`)
+   - `%=;`: Multi-Divides (`([8, 9] %=; 3) = [FALSE, TRUE]`)
+   - `^`: (Vector) Power (`4 ^ 2 = 4² = 16`)
+   - `^;`: Multi-Power (`[4, 3] ^; 2 = [16, 9]`)
+   - `^^`: (Vector) Bitwise XOR (`TRUE ^^ TRUE = FALSE`)
+   - `^^;`: Multi-Bitwise-XOR (`([TRUE, FALSE] ^^; TRUE) = [FALSE, TRUE]`)
    - `&`: Pattern Matching And / Sets Intersection (`∩`)
-   - `&&`: Bitwise AND (`&`)
+   - `&;`: Multi-Intersection
+   - `&&`: (Vector) Bitwise AND (`&`)
+   - `&&;`: Multi-Bitwise AND
    - `|`: Pattern Matching Or / Sets Union (`∪`)
-   - `||`: Bitwise OR (`|`)
-   - `=`: Equal (`=`)
-   - `>`: Greater Than (`>`)
-   - `>=`: Greater Than or Equal (`≥`)
-   - `>>`: Right Shift (`»`)
-   - `<`: Less Than (`<`)
-   - `<=`: Less Than or Equal (`≤`)
-   - `<<`: Left Shift (`«`)
+   - `|;`: Multi-Union
+   - `||`: (Vector) Bitwise OR (`|`)
+   - `||;`: Multi-Bitwise OR
+   - `=`: (Vector) Equal (`=`)
+   - `=;`: Multi-Equal (`([4, 3] =; 3) = [FALSE, TRUE]`)
+   - `==`: UNUSED (Purposely)
+   - `===`: Memory Indices Equal (If references point to same location)
+   - `===;`: Multi-Ref-Comparision (If references point to same location)
+   - `>`: (Vector) Greater Than (`>`)
+   - `>;`: Multi-Greater Than
+   - `>=`: (Vector) Greater Than or Equal (`≥`)
+   - `>=;`: Multi-Greater Than Or Equal
+   - `>>`: (Vector) Right Shift Bits Logical (`»`)
+   - `>>;`: Multi-Right Shift Bits Logical
+   - `<`: (Vector) Less Than (`<`)
+   - `<;`: Multi-Less Than
+   - `<=`: (Vector) Less Than or Equal (`≤`)
+   - `<=;`: Multi-Less Than Or Equal To
+   - `<<`: (Vector) Left Shift Bits Logical (`«`)
+   - `<<;`: Multi-Left Shift Bits Logical
    - `;`: Data Repetition (`"abc" ; 2 = "abcabc"`, `(4; 3, 5) = (4, 4, 4, 5)`)
+   - `;;`: Multi-Repitition (`"abc" ;; 2 = "aabbcc"`, `((4, 5) ;; 2) = (4, 4, 5, 5)`)
+ - `!`|`@`|`?`|`-`|`~`: Possibly Unary Operator
    - `~`: Inclusive Range (For pattern matching and type bounds)
- - `!`|`@`|`?`|`-`: Possibly Unary Operator
-   - `-`: Negation, Subtraction (`-`)
-   - `!`: Pattern Matching Not, Bitwise Not (`¬`)
-   - `!=`: Not equal (`≠`)
+   - `~~`: (Vector) Bitwise Not
+   - `-`: (Vector) Negation, Subtraction (`-`)
+   - `-;`: Multi-Subtraction
+   - `!`: Pattern Matching Not, (Vector) Boolean Not (`¬`)
+   - `!=`: (Vector) Not equal (`≠`)
+   - `!=;`: Multi-Not Equal
    - `@`: Mutable Reference
    - `?`: Try: Early return on error for outermost scope or named inner scope.
- - `#`: Comment Open (Until newline or `#`)
  - `$`: Auto-Derive Conversion Implementations
- - `(`|`)`: Tuple/Arguments/Order Open / Close
+ - `$$`: Template Syntax (TBD, possibly not needed)
+ - `(`|`)`: Tuple/Arguments Open / Close
  - `[`|`]`: List/Map/Set/Generics Open / Close
  - `{`|`}`: Scope/Order Open / Close
  - `.`:
-   - `.`: Access
+   - `.`: Accessor
+   - `..`: UNUSED (Purposely)
    - `...`: Variable arguments
  - `\`: Equivalent to Rust's `r#`
- - ```: Multi-line comment
+   - `\"`: 2nd: Equivalent to Rust's `r#"` (Until `"\`)
+   - `\\"`: 3rd: Equivalent to Rust's `r##"` (Until `"\\`)
+   - `\\\"`: 4th: Equivalent to Rust's `r###"` (Until `"\\\`)
+ - \`: 1st: Multi-line Comment Open / Close (on a line by itself)
+   - \`\`: 2nd: Multi-line Comment Open / Close (on a line by itself)
+   - \`\`\`: 3rd: Multi-line Comment Open / Close (on a line by itself)
+   - \`\`\`\`: 4th: Multi-line Comment Open / Close (on a line by itself)
  - ` `: Token Separator
  - `,`|`\n`: List Separator
 
-### Declaring A Variable
-```aratar
-# Int
-def a: 1_000
-# Hexadecimal
-def a: 0xFF
-# A function
-def a(text, parse) -> Opt.Int {
-    match parse [
-        TRUE { text.Opt{Int}() } # Parse the text as an Int
-        # Return the first unicode codepoint as an Int
-        FALSE { text.codepoints().next().Opt{Int}() }
-    ]
-}
+## Types
+The following are valid **type**s:
+ - `TypeName`: Uses UpperCamelCase
+ - `Type[Generic]`: Generics On Types
+ - `[Type]`: List of Type
+ - `(TypeA, TypeB)`: Tuple of Type
+ - `(Type) = Type`: 1-Tuple Type is equivalent to the type itself
+ - `[Type; 1] = Type`: 1-List Type is equivalent to the type itself
+ - `(Type; 1) = Type`: Tuples may use repeat syntax as well
+ - `Int[0~255]`: Type with bounds based on variable generics
+ - `Int[0~255 %= 2]`: Type bounded with only even numbers from 0 up to 254
 
-# Fully written out
-let a Int{0~}: Int{0~}(1_000)
-# Fully writen out Hexadecimal
-let a Hex: Hex(0xFF)
-# A function fully written out
-let a: Fn(text: Text, parse: Bool) -> Opt{Int} {
-    if parse [
-        TRUE: { text.Opt.Int() } # Parse the text as an Int
-        # Return the first unicode codepoint as an Int
-        FALSE: { text.codepoints().next().Opt{Int}() }
-    ]
-}
-```
+## Literals
+ - `(1, "abc")`: Tuple
+ - `[1, 2, 3]`: List
+ - `Int[0~255](34)`: Literal Unsigned Integer Byte
+ - `34`: Literal Inferred Type Integer
+ - `"text"`: Literal Text
+ - `[Int[0~255]; 3][1, 2, 3]`: Literal Unsigned Integer Byte List
+ - `(4) = 4`: 1-Tuple Equivalence
+ - `[4] = 4`: 1-List Equivalence
+ - `{4} = 4`: Literal In It's Own Scope
 
-### Order of operations
-There is no explicit order of operations - use `{}` or functions when using
-operators.
-
-```aratar
-5 * x ^ 3 + 4 * x ^ 2 + 3 * x                               # Doesn't compile
-{5 * {x ^ 3}} + {4 * {x ^ 2}} + {3 * x}                     # Compiles
-[                                                           # Compiles
-    [5, x ^ 3].product(),
-    [4, x ^ 2].product(),
-    [3, x].product()
-].sum()
-```
-
-### Functions
-```aratar
-def sin(num: Float) -> Float {
-    # code
-}
-sin(3.0)
-```
+## Order of Operations
+There are 8 operator precedence levels, plus "parenthesis"
+ 0. `()`, `[]`, `{}`
+ 1. `-` (negation), `+-`, `~~`, `!`, `@`
+ 2. `<<(;)`, `>>(;)`
+ 3. `&&(;)`, `||(;)`, `^^(;)`
+ 4. `^(;)`
+ 5. `*(;)`, `**(;)`, `/(;)`, `//(;)`, `%(;)`, `%%(;)`
+ 6. `+(;)`, `++(;)`, `-(;)` (subtraction)
+ 7. `<=(;)`, `=(;)`, `>=(;)`, `!=(;)`, `<(;)`, `>(;)`
+ 8. `;`, `;;`
 
 ## Examples
 ```aratar
+import sys
+
 # Use functional replacement for `and` and `or` statements.
-if [[a = 2, a != 4].any()
-    [b = 5, b = 7].any()
-   ].all()
-{
-    Term.print("a = ", a, " and b = ", b)
+if all(
+    any(a = 2, a != 4)
+    any(b = 5, b = 7)
+) {
+    sys.say("a = ", a, " and b = ", b)
 }
-if [[a = 2, b = 5].all()
-    [a != 4, b = 7].all()
-   ].any()
-{
-    Term.print("a = ", a, " and b = ", b)
+if all(
+   any(a = 2, b = 5)
+   any(a != 4, b = 7)
+) {
+    sys.say("a = ", a, " and b = ", b)
 }
 
 # Declare a function that adds a list of numbers together.
-def add: Fn(numbers) -> _ {
-    let ret: @Num.ZERO
-    numbers.iter(Fn[num] { ret +: num })
+def add(numbers) -> _ {
+    let @ret: Num.ZERO
+    for num: numbers {
+        ret +: num
+    }
     ret
 }
 
 let b: 42
-let var: @Some(b)
+let @var: SOME(b)
 
 # Maybe change `var` #
 
-var.match[
-    Some(b) {
-        Term.print("`var` was not changed")
+match var [
+    SOME(b) {
+        sys.say("`var` was not changed")
     }
-    Some(a: _) {
-        Term.print("`var` changed inner value to ", a)
+    SOME(a: _) {
+        sys.say("`var` changed inner value to ", a)
     }
-    None() {
-        Term.print("`var` changed to NONE")
+    NONE() {
+        sys.say("`var` changed to NONE")
     }
 ]
-```
-
-## Syntactic Data Structures
-
-```aratar
-# Fixed-Sized List
-let list: [Int; 4](1, 2, 3, 4)
-# Dynamic-Sized List
-let list: [Int](1, 2, 3, 4)
-# Infer
-let list: [1, 2, 3, 4]
-# Tuple
-let tuple: (Int, Text)(42, "Hello, world!")
-# Scope
-let int Int: {
-    let mutable: @Int(4)
-    for _: Range(0, 4) {
-        mutable +: 1
-    }
-    mutable
-} # int = 8
-# Closure / Function
-def Int.Text(num) -> Text {
-    let ret: @if num < 0 { "-" } else { "" }
-    let num: @num.Int().abs()
-
-    for num: Iter(num, Fn(@value) { value /: 10, value != 0 }) {
-        let digit: num % 10
-        let digit: match digit [
-            0 { "0" }
-            1 { "1" }
-            2 { "2" }
-            3 { "3" }
-            4 { "4" }
-            5 { "5" }
-            6 { "6" }
-            7 { "7" }
-            8 { "8" }
-            9 { "9" }
-        ]
-        ret.append(digit)
-    }
-
-    ret
-}
-# List Functions
-def multi_int_to_text: Fn(...: Int) -> Text {
-    let ret @Text: @""
-    for (i, num): numbers.enumerate() {
-        ret.append(num.Text)
-        if i != numbers.len - 1 {
-            ret ++: ", "
-        }
-    }
-    ret
-}
-assert[multi_int_to_text(1, 2, 3) = "1, 2, 3"]
 ```
 
 ## Types
@@ -245,26 +226,31 @@ enum Try[E, T](
 )
 
 $Text, $Try
-enum Opt{T}[NONE: 0, SOME[@T]: 1]
+enum Opt[T](
+    NONE: 0
+    SOME[@T]: 1
+)
 
-struct Complex(define real: @Real, define imag: @Imaginary)
+$Text
+struct Complex(
+    real: @Real
+    imag: @Imaginary
+)
 
-typedef Text: [Grapheme]
-
-struct Range(define start: Int, define end: Int)
+$Text
+struct Range(
+    start: Int
+    end: Int
+)
 
 # List of built-in types
-Fn
+Func
 Bool
 Text
 Opt
 Int
 Float
-Num
 Double
-Grapheme
-AsciiText
-AsciiChar
 Data
 Imaginary
 Real
@@ -279,40 +265,42 @@ The following program demonstrates usage of adhoc enums:
 
 **adhoc.rtr**
 ```aratar
+export start
+
 struct ErrA
 struct ErrB
 struct ErrC
 
-api ErrA.Text: "A Failed"
-api ErrB.Text: "B Failed"
-api ErrC.Text: "C Failed"
+def ErrA.Text(self) -> _ { "A Failed" }
+def ErrB.Text(self) -> _ { "B Failed" }
+def ErrC.Text(self) -> _ { "C Failed" }
 
 enum Enum: ErrA | ErrB
 
-api start(a: Int{1,2,4,5}) -> Try(Text, Enum | ErrC) {
+def start(a: Int[1|2|4|5]) -> Try[Text, Enum | ErrC] {
     let result: fn_a(a)?
     Ok(fn_b(result)?)
 }
 
-def fn_a(int: Int{1,2,4,5}) -> Try(Int, Enum) {
+def fn_a(int: Int[1|2|4|5]) -> Try[Int, Enum] {
     match int [
-        1    { Err(ErrA) }
-        2    { Err(ErrB) }
-        a: _ { Ok(a) }
+        1    { ERR(ErrA) }
+        2    { ERR(ErrB) }
+        a: _ { OK(a) }
     ]
 }
 
-def fn_b(int: Int{4~5}) -> Try(Text, ErrC) {
+def fn_b(int: Int[4~5]) -> Try[Text, ErrC] {
     match int [
-        4 { Err(ErrC) }
-        5 { Ok("Hello, world!") }
+        4 { ERR(ErrC) }
+        5 { OK("Hello, world!") }
     ]
 }
 ```
 
 Run it in the REPL:
 ```aratar
-use adhoc
+import adhoc
 adhoc 1
 # FAIL: A Failed
 adhoc 2
@@ -328,8 +316,10 @@ adhoc 5
 ## Asynchronous Code
 **async.rtr**
 ```aratar
+export start
+
 # Program to wait one second then print out "1"
-api start() {
+def start() {
     let thread: Thread(thread)
     let result: thread.yield()
     Term.print("Result = ", result)
@@ -344,7 +334,7 @@ def thread() -> Int {
 
 Asynchronous code is built on `Future`:
 ```aratar
-struct Future{T}(
+struct Future[T](
     # Cooperatively gives up CPU until the `Future` is evaluated.
     def yield() -> T
 )
@@ -353,14 +343,14 @@ struct Future{T}(
 Implementing `Future`:
 ```aratar
 # Import C API from Aratar runtime
-use aasi_timer(
+import aasi_timer(
     secs: Int64[0~],
     nanos: Int32[0~999_999_999]
 ) -> MemAddr
 
 struct Task
 
-api Task.Future: Future(
+def Task.Future: Future(
     yield: Fn() {
         # Set up callback
         let addr: aratar_sys_timer(1, 0)
@@ -372,7 +362,9 @@ api Task.Future: Future(
 
 ## Asynchronous Code With Adhoc Enums
 ```aratar
-api start() {
+export start
+
+def start() {
     # Use "Select" operator (`||`) to run both futures at the same time.  This
     # builds an Adhoc enum with two variants with selector and result.
     match Select(get_float(), get_int()).yield() [
@@ -416,10 +408,12 @@ def get_int() -> Int {
 Variadic arguments must always be the last arguments.
 
 ```aratar
+export Term[print]
+
 struct Term()
 
 # Print something that can be turned into text to the terminal.
-api Term.print(...: .Text) {
+def Term.print(...: .Text) {
     for text_from: ... {
         for byte: text_from {
             Term.output.write(text_from.Text().List{Byte})
