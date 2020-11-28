@@ -97,21 +97,21 @@ let IteratorB.Iterator: [
 # Won't Compile
 def start: Fn(@env) {
     for item: IteratorA(index: 0, upto: 256) {
-        Term.print(item)
+        dbg(item)
     }
 }
 
 # Will Compile
 def start: Fn(@env) {
     for item: IteratorB(index: 0, upto: 256) {
-        Term.print(item)
+        dbg(item)
     }
 }
 
 # Won't Compile
 def start: Fn(@env) {
     for item: IteratorB(index: 1, upto: 0) {
-        Term.print(item)
+        dbg(item)
     }
 }
 ```
@@ -128,10 +128,10 @@ def start(@sys) {
 let input: Fn(@sys, event) {
     if event [
         Text(text: text.is_letter() & !text.is_whitespace()) {
-            Term.print(text)
+            dbg(text)
         }
         Key(Press, key: Escape() | Q()) {
-            Term.print("Quit key used: ", key)
+            dbg("Quit key used: ", key)
             sys.quit()
         }
         Mouse(_x: _, _y: _) { # FIXME # }
@@ -157,7 +157,7 @@ struct Struct(
 # Call constructor (compiles)
 let struct: Struct(value_a: 222, value_b: 0xDE)
 # Load (Read) and print (compiles)
-Term.print(struct.value_a)
+dbg(struct.value_a)
 # Store (Assign) (compiles)
 struct.value_b: 0x00
 ```
@@ -170,13 +170,13 @@ use main[Struct]
 # Call constructor (doesn't compile, raw constructors are not exported)
 let struct: Struct(value_a: 222, value_b: 0xDE)
 # Load (Read) and print (doesn't compile, let statements not exported)
-Term.print(struct.value_a)
+dbg(struct.value_a)
 # Store (Assign) (doesn't compile, public struct items are always read-only)
 struct.value_b: 0x00
 
 # Compiles:
 let struct: Struct
-Term.print(struct.value_b)
+dbg(struct.value_b)
 ```
 
 ## Equivalence And Lazy Expression
@@ -187,17 +187,7 @@ Term.print(struct.value_b)
 is the same as:
 
 ```aratar
-'scope Fn() { }
-```
-
-### Lazy Expressions
-```aratar
-let expr_a: { 4 + 5, sys.out["Third Print"] }
-let expr_b: (sys.out["First Print"])
-let expr_c: [sys.out["Second Print"]]
-expr_a[] # Type: []
-expr_b # Type: []
-expr_c # Type: [[]; 1]
+'scope fn() { }
 ```
 
 ### Iterators
@@ -211,9 +201,9 @@ let iter: {
     }
 }
 let iter: iter.Iter.map Fn[number] {
-    out[number]
+    dbg(number)
 }
-out["Running iterator:"]
+dbg("Running iterator:")
 let _: iter # Iterator will run on free
 ```
 
@@ -225,4 +215,27 @@ compile time.
 let list: [1, 2, 3]
 list.get(2) # Compiles
 list.get(3) # Doesn't compile
+```
+
+## Trait Objects And Specialization
+Possible concrete types must be decided on at compile time.
+
+```aratar
+fn function(trait .Trait) {
+    match trait {
+        ConcreteType {
+            dbg("Is concrete")
+        }
+        OtherType {
+            dbg("Is other")
+        }
+        type: _ { # optional, allows other types to be passed #
+            dbg(type)
+        }
+    }
+}
+
+function(ConcreteType)
+function(OtherType)
+function(Int)
 ```

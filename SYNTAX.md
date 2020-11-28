@@ -8,18 +8,20 @@ Starts with:
    - `A-Z`: Compiler error
  - `a`~`z`:
    - `0~9`|`a-z`|`_`: Identifier (functions, variables, and keywords)
-     - `import`: Import a library/module definition `import aratar.fft{0.1}`
-     - `export`: Exported public definition `export fft: Fn[@samples] { # ... # }`
-     - `def`: Definition
+     - `import`: Import a definition from a module `import aratar.fft{0.1}`
+     - `export`: Export a definition.
+     - `def`: Define a constant.
      - `let`: Declare a variable `let samples: @[1, 2, 3, 4, 5, 6, 7, 8]`
      - `enum`: Define Associated Union Type
      - `struct`: Define Record Type
      - `typedef`: Define Type-Safe Type Alias (Must use casting)
+     - `fn`: Define a function
      - `for`: Iteration
      - `if`: Conditional Branching
      - `else`: Alternative Conditional Branch
      - `elif`: Compressed `else { if {} }`
      - `match`: Pattern matching
+     - `yield`: Suspend the function and yield to it's caller optionally with a value.
      - `return`: Early exit from outermost scope or named inner scope
      - `syscall`: A syscall (unsafe, can only call from module named "sys")
      - `all`: Built-in Function (`all(TRUE, TRUE) = TRUE`)
@@ -52,6 +54,7 @@ Starts with:
    - `""`: Empty Text
  - `#`: Comment Open (Until newline or `#`)
    - `##`: Empty Comment
+   - `###`: Multi-Line Comment Open/Close (on it's own line)
  - `'`: Loop Label
  - `:`: Assignment
    - `::`: Swap
@@ -130,10 +133,6 @@ Starts with:
    - `\"`: 2nd: Equivalent to Rust's `r#"` (Until `"\`)
    - `\\"`: 3rd: Equivalent to Rust's `r##"` (Until `"\\`)
    - `\\\"`: 4th: Equivalent to Rust's `r###"` (Until `"\\\`)
- - \`: 1st: Multi-line Comment Open / Close (on a line by itself)
-   - \`\`: 2nd: Multi-line Comment Open / Close (on a line by itself)
-   - \`\`\`: 3rd: Multi-line Comment Open / Close (on a line by itself)
-   - \`\`\`\`: 4th: Multi-line Comment Open / Close (on a line by itself)
  - ` `: Token Separator
  - `,`|`\n`: List Separator
 
@@ -141,13 +140,14 @@ Starts with:
 The following are valid **type**s:
  - `TypeName`: Uses UpperCamelCase
  - `Type[Generic]`: Generics On Types
- - `[Type]`: List of Type
  - `(TypeA, TypeB)`: Tuple of Type
  - `(Type) = Type`: 1-Tuple Type is equivalent to the type itself
- - `[Type; 1] = Type`: 1-List Type is equivalent to the type itself
+ - `List[Type; 1] = Type`: 1-List Type is equivalent to the type itself
  - `(Type; 1) = Type`: Tuples may use repeat syntax as well
  - `Int[0~255]`: Type with bounds based on variable generics
  - `Int[0~255 %= 2]`: Type bounded with only even numbers from 0 up to 254
+ - `Fn(Type) = Func[(), (Type)]`: Function
+ - `Fn(Type) -> Return = Func[(Return), (Type)]`: Function with return type
 
 ## Literals
  - `(1, "abc")`: Tuple
@@ -155,7 +155,7 @@ The following are valid **type**s:
  - `Int[0~255](34)`: Literal Unsigned Integer Byte
  - `34`: Literal Inferred Type Integer
  - `"text"`: Literal Text
- - `[Int[0~255]; 3][1, 2, 3]`: Literal Unsigned Integer Byte List
+ - `List[Int[0~255]; 3][1, 2, 3]`: Literal Unsigned Integer Byte List
  - `(4) = 4`: 1-Tuple Equivalence
  - `[4] = 4`: 1-List Equivalence
  - `{4} = 4`: Literal In It's Own Scope
@@ -181,13 +181,13 @@ if all(
     any(a = 2, a != 4)
     any(b = 5, b = 7)
 ) {
-    sys.say("a = ", a, " and b = ", b)
+    dbg("a = ", a, " and b = ", b)
 }
 if all(
    any(a = 2, b = 5)
    any(a != 4, b = 7)
 ) {
-    sys.say("a = ", a, " and b = ", b)
+    dbg("a = ", a, " and b = ", b)
 }
 
 # Declare a function that adds a list of numbers together.
@@ -206,25 +206,22 @@ let @var: SOME(b)
 
 match var [
     SOME(b) {
-        sys.say("`var` was not changed")
+        dbg("`var` was not changed")
+    }
+    SOME(a: -1 ~ 1) {
+        dbg("`var` changed inner value to be close to zero: ", a)
     }
     SOME(a: _) {
-        sys.say("`var` changed inner value to ", a)
+        dbg("`var` changed inner value to ", a)
     }
     NONE() {
-        sys.say("`var` changed to NONE")
+        dbg("`var` changed to NONE")
     }
 ]
 ```
 
 ## Types
 ```aratar
-$Text
-enum Try[E, T](
-    Err(E): 0
-    Ok(T): 1
-)
-
 $Text, $Try
 enum Opt[T](
     NONE: 0
@@ -247,71 +244,76 @@ struct Range(
 Func
 Bool
 Text
-Opt
-Int
-Float
-Double
+Opt[T]
+Int[Domain: ~]
+Float[Domain: ~]
+Double[Domain: ~]
 Data
-Imaginary
-Real
-Complex
-Dec
+Imaginary[Domain: ~]
+Real[Domain: ~]
+Complex[Domain: ~]
+Dec[Domain: ~]
+
+# The Err Type.
+struct Err(
+    Text: fn() -> Text
+)
+
+# The Try Type
+$Text?
+enum Try[T](
+    ERR(.Err): 0
+    OK(T): 1
+)
+```
+
+# Error Handling
+```aratar
+# Example Error Type
+struct Error()
+
+# Add a method to `Error`.
+fn Error.test(self) -> () {
+    dbg("Hello, world!")
+}
+
+# Implement conversion to `Text`.
+fn Error.Text(self) -> Text {
+    "Example Error Message"
+}
+
+# Implement conversion to `Err`, allowing it to be used in the `Try[T]` type.
+fn Error.Err(self) -> Err {
+    # Err constructor takes a function.
+    Err(fn() { self.Text() })
+}
+
+# Returns OK if should_error is FALSE, ERR if should_error is TRUE
+fn maybe_error(should_error Bool) -> Try[()] {
+    if should_error {
+        ERR(Error())
+    } else {
+        OK(())
+    }
+}
+
+# Entry point for a failable program
+def fn start(_sys) -> Try[()] {
+    # Should early return `Try.ERR`.  Note that this can be simplified to just
+    # calling `maybe_error(TRUE)`.
+    OK(maybe_error(TRUE)?)
+}
+```
+
+# Numbers
+```
+# Fails to compile
+let a Int[1~3|5~7]: 4
+# Succeeds compile
+let a Int[1~3|5~7]: 5
 ```
 
 # Ideas
-
-## Adhoc Enums
-The following program demonstrates usage of adhoc enums:
-
-**adhoc.rtr**
-```aratar
-export start
-
-struct ErrA
-struct ErrB
-struct ErrC
-
-def ErrA.Text(self) -> _ { "A Failed" }
-def ErrB.Text(self) -> _ { "B Failed" }
-def ErrC.Text(self) -> _ { "C Failed" }
-
-enum Enum: ErrA | ErrB
-
-def start(a: Int[1|2|4|5]) -> Try[Text, Enum | ErrC] {
-    let result: fn_a(a)?
-    Ok(fn_b(result)?)
-}
-
-def fn_a(int: Int[1|2|4|5]) -> Try[Int, Enum] {
-    match int [
-        1    { ERR(ErrA) }
-        2    { ERR(ErrB) }
-        a: _ { OK(a) }
-    ]
-}
-
-def fn_b(int: Int[4~5]) -> Try[Text, ErrC] {
-    match int [
-        4 { ERR(ErrC) }
-        5 { OK("Hello, world!") }
-    ]
-}
-```
-
-Run it in the REPL:
-```aratar
-import adhoc
-adhoc 1
-# FAIL: A Failed
-adhoc 2
-# FAIL: B Failed
-adhoc 3
-# FAIL: Argument `a` set to 3, expected any of [1, 2, 4, 5]
-adhoc 4
-# FAIL: C Failed
-adhoc 5
-# Hello, world!
-```
 
 ## Asynchronous Code
 **async.rtr**
@@ -368,10 +370,10 @@ def start() {
     # Use "Select" operator (`||`) to run both futures at the same time.  This
     # builds an Adhoc enum with two variants with selector and result.
     match Select(get_float(), get_int()).yield() [
-        Float(sel, a: _) {
+        Float(sel: _, a: _) {
             Term.print("Got float: ", a, " - Then int: ", sel.yield())
         }
-        Int(sel, a: _) {
+        Int(sel: _, a: _) {
             Term.print("Got int: ", a, " - Then float: ", sel.yield())
         }
     ]
